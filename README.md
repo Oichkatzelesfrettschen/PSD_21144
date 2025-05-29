@@ -107,8 +107,9 @@ Though due to limited access to hardware, testing of 2.11BSD_X44 on that archite
 
 ## Building:
 
-Before running build.sh you should prepare the host using `scripts/setup_build_env.sh` (via `source` or `.`) to modify your shell environment.
-This script installs `bmake`, `byacc`, `bison` and `flex` and cleans the `PATH` to satisfy build.sh.
+Before running `build.sh` you should execute `./setup.sh`. This script
+installs `bmake`, `byacc`, `bison` and `flex`, cleans the `PATH`, and then
+verifies that `bmake` can be built.
 
 
 You can cross-build 211BSD_X44 from most UNIX-like operating systems. To build for i386, in the src directory:
