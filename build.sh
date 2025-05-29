@@ -377,6 +377,31 @@ find_in_PATH()
 	echo "${result}"
 }
 
+# Remove non-absolute entries from PATH.
+sanitize_path()
+{
+        local cleaned=""
+        local dir
+        local oldIFS="${IFS}"
+        IFS=":"
+        for dir in ${PATH}; do
+                case "${dir}" in
+                ""|".")
+                        continue
+                        ;;
+                /*)
+                        cleaned="${cleaned:+${cleaned}:}${dir}"
+                        ;;
+                *)
+                        echo "Removing non-absolute PATH component: ${dir}" >&2
+                        ;;
+                esac
+        done
+        IFS="${oldIFS}"
+        PATH="${cleaned}"
+        export PATH
+}
+
 # Try to find a working POSIX shell, and set HOST_SH to refer to it.
 # Assumes that uname_s, uname_m, and PWD have been set.
 set_HOST_SH()
@@ -1395,6 +1420,8 @@ parseoptions()
 #
 sanitycheck()
 {
+        sanitize_path()
+
 	# Install as non-root is a bad idea.
 	#
 	if ${do_install} && [ "$id_u" -ne 0 ] ; then
