@@ -108,8 +108,11 @@ Though due to limited access to hardware, testing of 2.11BSD_X44 on that archite
 ## Building:
 
 Before running `build.sh` you should execute `./setup.sh`. This script
-installs `bmake`, `byacc`, `bison` and `flex`, cleans the `PATH`, and then
-verifies that `bmake` can be built.
+installs `bmake`, `byacc`, `bison`, `flex` and the `build-essential`
+package group, cleans the `PATH`, and then verifies that `bmake` can be
+built. When the package installation fails (for example due to a missing
+network connection), the script continues and reports the error so you
+can install the tools manually.
 
 
 You can cross-build 211BSD_X44 from most UNIX-like operating systems. To build for i386, in the src directory:

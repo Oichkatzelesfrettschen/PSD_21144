@@ -9,16 +9,22 @@ if ! grep -q '^deb .\+universe' /etc/apt/sources.list /etc/apt/sources.list.d/* 
     sudo add-apt-repository -y universe
 fi
 
-# Refresh package lists.
-sudo apt-get update
+# Refresh package lists; if the network is unavailable continue.
+if ! sudo apt-get update; then
+    echo "apt-get update failed; using existing package lists" >&2
+fi
 
 # Packages required by the BSD build system.
-PKGS=(bmake byacc bison flex)
+PKGS=(bmake byacc bison flex build-essential)
 
 # Install each package if not already installed.
 for pkg in "${PKGS[@]}"; do
+    # Install the package when it is not already present. Continue on
+    # failures so the rest of the environment can still be prepared.
     if ! dpkg -s "$pkg" >/dev/null 2>&1; then
-        sudo apt-get install -y "$pkg"
+        if ! sudo apt-get install -y "$pkg"; then
+            echo "Failed to install $pkg" >&2
+        fi
     fi
 done
 
