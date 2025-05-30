@@ -39,26 +39,26 @@
 #endif
 
 #include <sys/cdefs.h>
-#if	defined(DOSCCS) && !defined(lint)
+#if defined(DOSCCS) && !defined(lint)
 static char sccsid[] = "@(#)extract.c	5.5 (Berkeley) 3/12/91";
 #endif
 
-#include <sys/param.h>
-#include <sys/time.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <sys/dir.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <unistd.h>
 #include "archive.h"
 #include "extern.h"
+#include <errno.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/dir.h>
+#include <sys/param.h>
+#include <sys/stat.h>
+#include <sys/time.h>
+#include <unistd.h>
 
 extern int errno;
-extern CHDR chdr;			/* converted header */
-extern char *archive;			/* archive name */
+extern CHDR chdr;	  /* converted header */
+extern char *archive; /* archive name */
 extern u_int options;
 
 /*
@@ -69,11 +69,8 @@ extern u_int options;
  *	members date otherwise date is time of extraction.  Does not modify
  *	archive.
  */
-int
-extract(argv)
-	char **argv;
-{
-	register int afd, all, tfd;
+int extract(char **argv) {
+	int afd, all, tfd;
 	struct timeval tv[2];
 	struct stat sb;
 	CF cf;
@@ -93,13 +90,11 @@ extract(argv)
 			continue;
 		}
 
-		if ((options & AR_U) && !stat(file, &sb) &&
-		    sb.st_mtime > chdr.date)
+		if ((options & AR_U) && !stat(file, &sb) && sb.st_mtime > chdr.date)
 			continue;
 
-		if ((tfd = open(file, O_WRONLY|O_CREAT|O_TRUNC, 0200)) < 0) {
-			(void)fprintf(stderr, "ar: %s: %s.\n",
-			    file, strerror(errno));
+		if ((tfd = open(file, O_WRONLY | O_CREAT | O_TRUNC, 0200)) < 0) {
+			(void)fprintf(stderr, "ar: %s: %s.\n", file, strerror(errno));
 			skip_arobj(afd);
 			continue;
 		}
@@ -112,14 +107,13 @@ extract(argv)
 		copy_ar(&cf, chdr.size);
 
 		if (fchmod(tfd, (short)chdr.mode)) {
-			(void)fprintf(stderr, "ar: %s: chmod: %s\n",
-			    file, strerror(errno));
+			(void)fprintf(stderr, "ar: %s: chmod: %s\n", file, strerror(errno));
 		}
 		if (options & AR_O) {
 			tv[0].tv_sec = tv[1].tv_sec = chdr.date;
 			if (utimes(file, tv)) {
-				(void)fprintf(stderr, "ar: %s: utimes: %s\n",
-				    file, strerror(errno));
+				(void)fprintf(stderr, "ar: %s: utimes: %s\n", file,
+							  strerror(errno));
 			}
 		}
 		(void)close(tfd);
@@ -130,7 +124,7 @@ extract(argv)
 
 	if (*argv) {
 		orphans(argv);
-		return(1);
+		return (1);
 	}
-	return(0);
-}	
+	return (0);
+}

@@ -39,39 +39,36 @@
 #endif
 
 #include <sys/cdefs.h>
-#if	defined(DOSCCS) && !defined(lint)
+#if defined(DOSCCS) && !defined(lint)
 static char sccsid[] = "@(#)delete.c	5.6 (Berkeley) 3/12/91";
 #endif
 
-#include <sys/types.h>
-#include <sys/param.h>
-#include <sys/stat.h>
 #include <sys/dir.h>
 #include <sys/file.h>
+#include <sys/param.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
-#include <fcntl.h>
-#include <stdio.h>
-#include <ar.h>
-#include <stdarg.h>
-#include <stdlib.h>
-#include <unistd.h>
 #include "archive.h"
 #include "extern.h"
 #include "pathnames.h"
+#include <ar.h>
+#include <fcntl.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 
-extern CHDR chdr;			/* converted header */
-extern char *archive;			/* archive name */
-extern char *tname;                     /* temporary file "name" */
+extern CHDR chdr;	  /* converted header */
+extern char *archive; /* archive name */
+extern char *tname;	  /* temporary file "name" */
 extern u_int options;
 
 /*-
  * delete --
  *	Deletes named members from the archive.
  */
-int
-delete(argv)
-	register char **argv;
-{
+int delete(char **argv) {
 	CF cf;
 	off_t size;
 	int afd, tfd;
@@ -81,7 +78,7 @@ delete(argv)
 	tfd = tmp();
 
 	/* Read and write to an archive; pad on both. */
-	SETCF(afd, archive, tfd, tname, RPAD|WPAD);
+	SETCF(afd, archive, tfd, tname, RPAD | WPAD);
 	while (get_arobj(afd)) {
 		if (*argv && (file = files(argv))) {
 			if (options & AR_V)
@@ -98,15 +95,15 @@ delete(argv)
 	SETCF(tfd, tname, afd, archive, NOPAD);
 	copy_ar(&cf, size);
 	(void)close(tfd);
-//	(void)ftruncate(afd, size + SARMAG);
-//  close_archive(afd);
-    if (ftruncate(afd, size + SARMAG)) {
-        close_archive(afd);
-    }
+	//	(void)ftruncate(afd, size + SARMAG);
+	//  close_archive(afd);
+	if (ftruncate(afd, size + SARMAG)) {
+		close_archive(afd);
+	}
 
 	if (*argv) {
 		orphans(argv);
-		return(1);
+		return (1);
 	}
-	return(0);
-}	
+	return (0);
+}

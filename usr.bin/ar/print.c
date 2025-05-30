@@ -40,19 +40,19 @@
 
 #include <sys/cdefs.h>
 
-#if	defined(DOSCCS) && !defined(lint)
+#if defined(DOSCCS) && !defined(lint)
 static char sccsid[] = "@(#)print.c	5.6 (Berkeley) 3/12/91";
 #endif
 
-#include <sys/param.h>
+#include "archive.h"
+#include "extern.h"
 #include <fcntl.h>
 #include <stdio.h>
 #include <sys/dir.h>
-#include "archive.h"
-#include "extern.h"
+#include <sys/param.h>
 
-extern CHDR chdr;			/* converted header */
-extern char *archive;			/* archive name */
+extern CHDR chdr;	  /* converted header */
+extern char *archive; /* archive name */
 extern u_int options;
 
 /*
@@ -60,12 +60,9 @@ extern u_int options;
  *	Prints archive members on stdout - if member names given only
  *	print those members, otherwise print all members.
  */
-int
-print(argv)
-	char **argv;
-{
+int print(char **argv) {
 	CF cf;
-	register int afd, all;
+	int afd, all;
 	char *file;
 
 	afd = open_archive(O_RDONLY);
@@ -91,7 +88,7 @@ print(argv)
 
 	if (*argv) {
 		orphans(argv);
-		return(1);
+		return (1);
 	}
-	return(0);
+	return (0);
 }

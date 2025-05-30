@@ -39,29 +39,29 @@
 #endif
 
 #include <sys/cdefs.h>
-#if	defined(DOSCCS) && !defined(lint)
+#if defined(DOSCCS) && !defined(lint)
 static char sccsid[] = "@(#)move.c	5.6 (Berkeley) 3/12/91";
 #endif
 
-#include <sys/types.h>
-#include <sys/param.h>
-#include <sys/stat.h>
 #include <sys/dir.h>
 #include <sys/file.h>
+#include <sys/param.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
-#include <fcntl.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <ar.h>
-#include <stdlib.h>
-#include <unistd.h>
 #include "archive.h"
 #include "extern.h"
 #include "pathnames.h"
+#include <ar.h>
+#include <fcntl.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 
-extern CHDR chdr;			/* converted header */
-extern char *archive;			/* archive name */
-extern char *tname;                     /* temporary file "name" */
+extern CHDR chdr;	  /* converted header */
+extern char *archive; /* archive name */
+extern char *tname;	  /* temporary file "name" */
 extern u_int options;
 
 /*
@@ -71,22 +71,19 @@ extern u_int options;
  *	option selected members go after 'posname'.  If no options, members
  *	are moved to end of archive.
  */
-int
-move(argv)
-	char **argv;
-{
-	extern char *posarg, *posname;	/* positioning file names */
+int move(char **argv) {
+	extern char *posarg, *posname; /* positioning file names */
 	CF cf;
 	off_t size, tsize;
 	int afd, curfd, mods, tfd1, tfd2, tfd3;
 	char *file;
 
 	afd = open_archive(O_RDWR);
-	mods = options & (AR_A|AR_B);
+	mods = options & (AR_A | AR_B);
 
-	tfd1 = tmp();			/* Files before key file. */
-	tfd2 = tmp();			/* Files selected by user. */
-	tfd3 = tmp();			/* Files after key file. */
+	tfd1 = tmp(); /* Files before key file. */
+	tfd2 = tmp(); /* Files selected by user. */
+	tfd3 = tmp(); /* Files after key file. */
 
 	/*
 	 * Break archive into three parts -- selected entries and entries
@@ -97,8 +94,8 @@ move(argv)
 	 */
 
 	/* Read and write to an archive; pad on both. */
-	SETCF(afd, archive, 0, tname, RPAD|WPAD);
-	for (curfd = tfd1; get_arobj(afd);) {	
+	SETCF(afd, archive, 0, tname, RPAD | WPAD);
+	for (curfd = tfd1; get_arobj(afd);) {
 		if (*argv && (file = files(argv))) {
 			if (options & AR_V)
 				(void)printf("m - %s\n", file);
@@ -121,10 +118,9 @@ move(argv)
 	}
 
 	if (mods) {
-		(void)fprintf(stderr, "ar: %s: archive member not found.\n",
-		    posarg);
+		(void)fprintf(stderr, "ar: %s: archive member not found.\n", posarg);
 		close_archive(afd);
-		return(1);
+		return (1);
 	}
 	(void)lseek(afd, (off_t)SARMAG, L_SET);
 
@@ -142,15 +138,15 @@ move(argv)
 	(void)lseek(tfd3, (off_t)0, L_SET);
 	cf.rfd = tfd3;
 	copy_ar(&cf, size);
-//	(void)ftruncate(afd, tsize + SARMAG);
-//	close_archive(afd);
-    if (ftruncate(afd, tsize + SARMAG)) {
-        close_archive(afd);
-    }
+	//	(void)ftruncate(afd, tsize + SARMAG);
+	//	close_archive(afd);
+	if (ftruncate(afd, tsize + SARMAG)) {
+		close_archive(afd);
+	}
 
 	if (*argv) {
 		orphans(argv);
-		return(1);
+		return (1);
 	}
-	return(0);
-}	
+	return (0);
+}
