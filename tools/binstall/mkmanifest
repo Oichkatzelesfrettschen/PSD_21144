@@ -1,7 +1,13 @@
 #!/bin/sh
+# Generate Windows manifest files for installation utilities.
+# Exits on any command failure to avoid partial files.
+set -e
 
+# makeone path-to-exe
+#   Create a manifest for the given executable if its name matches
+#   installation tools handled by the installer.
 makeone() {
-	local name="$(basename "$1" .exe)"
+        local name="$(basename "$1" .exe)"
 	case $name in
 	*instal*|*patch*|*update*|*setup*)
 		;;
@@ -27,7 +33,13 @@ cat << _EOF > ${1%.exe}.exe.manifest
 _EOF
 }
 
-for i
-do
-	makeone "$i"
+usage() {
+        echo "Usage: $0 executables..." >&2
+        exit 1
+}
+
+[ $# -gt 0 ] || usage
+
+for i do
+        makeone "$i"
 done

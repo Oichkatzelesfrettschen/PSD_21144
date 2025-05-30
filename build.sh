@@ -62,7 +62,8 @@ esac
 
 # Solaris /bin/sh, and other SVR4 shells, do not support "!".
 # This is the first feature that we test, because subsequent
-# tests use "!".
+# tests rely on "!".  Several TODO notes mention build failures
+# on such shells when modern features are missing.
 #
 if test -z "$errmsg"; then
     if ( eval '! false' ) >/dev/null 2>&1 ; then
