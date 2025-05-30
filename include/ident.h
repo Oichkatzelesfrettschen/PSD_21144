@@ -2,73 +2,7 @@
 ** ident.h
 **
 ** Author: Peter Eriksson <pen@lysator.liu.se>
-** Intruder: Pär Emanuelsson <pell@lysator.liu.se>
-*/
 
-#ifndef __IDENT_H__
-#define __IDENT_H__
-
-#ifdef	__cplusplus
-extern "C" {
-#endif
-
-/* Sigh */
-#ifdef __STDC__
-#  if __STDC__ == 1
-#    define IS_STDC 1
-#  endif
-#endif
-
-#ifdef __P
-#  undef __P
-#endif
-    
-#ifdef IS_STDC
-#  define __P(AL)	                  AL
-
-#ifdef IN_LIBIDENT_SRC
-    
-#  define __P1(t1,a1) \
-    (t1 a1)
-    
-#  define __P2(t1,a1,t2,a2) \
-    (t1 a1, t2 a2)
-	
-#  define __P3(t1,a1,t2,a2,t3,a3) \
-    (t1 a1, t2 a2, t3 a3)
-	    
-#  define __P4(t1,a1,t2,a2,t3,a3,t4,a4) \
-    (t1 a1, t2 a2, t3 a3, t4 a4)
-
-#  define __P5(t1,a1,t2,a2,t3,a3,t4,a4,t5,a5) \
-    (t1 a1, t2 a2, t3 a3, t4 a4, t5 a5)
-
-#  define __P7(t1,a1,t2,a2,t3,a3,t4,a4,t5,a5,t6,a6,t7,a7) \
-    (t1 a1, t2 a2, t3 a3, t4 a4, t5 a5, t6 a6, t7 a7)
-#endif
-    
-#else
-
-#  define __P(AL)	                  ()
-
-#ifdef IN_LIBIDENT_SRC
-    
-#  define __P1(t1,a1)                     (a1) \
-    t1 a1;
-#  define __P2(t1,a1,t2,a2)               (a1, a2) \
-    t1 a1; \
-    t2 a2;
-#  define __P3(t1,a1,t2,a2,t3,a3)         (a1, a2, a3) \
-    t1 a1; \
-    t2 a2; \
-    t3 a3;
-#  define __P4(t1,a1,t2,a2,t3,a3,t4,a4)   (a1, a2, a3, a4) \
-    t1 a1; \
-    t2 a2; \
-    t3 a3; \
-    t4 a4;
-#  define __P5(t1,a1,t2,a2,t3,a3,t4,a4,t5,a5)   (a1, a2, a3, a4, a5) \
-    t1 a1; \
     t2 a2; \
     t3 a3; \
     t4 a4; \

@@ -175,11 +175,8 @@
 
                         /* Type declarations */
 
-#ifndef __P /* function prototypes */
 #  ifdef STDC
-#    define __P(args)  args
 #  else
-#    define __P(args)  ()
 #  endif
 #endif
 
