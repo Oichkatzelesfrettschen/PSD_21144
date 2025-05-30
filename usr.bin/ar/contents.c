@@ -39,27 +39,27 @@
 #endif
 
 #include <sys/cdefs.h>
-#if	defined(DOSCCS) && !defined(lint)
+#if defined(DOSCCS) && !defined(lint)
 static char sccsid[] = "@(#)contents.c	5.6 (Berkeley) 3/12/91";
 #endif
 
+#include "archive.h"
+#include "extern.h"
+#include <ar.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/dir.h>
 #include <sys/param.h>
 #include <sys/stat.h>
 #include <sys/time.h>
-#include <fcntl.h>
-#include <tzfile.h>
-#include <sys/dir.h>
-#include <ar.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <unistd.h>
 #include <time.h>
-#include "archive.h"
-#include "extern.h"
+#include <tzfile.h>
+#include <unistd.h>
 
-extern CHDR chdr;			/* converted header */
-extern char *archive;		/* archive name */
+extern CHDR chdr;	  /* converted header */
+extern char *archive; /* archive name */
 extern u_int options;
 
 /*
@@ -67,14 +67,11 @@ extern u_int options;
  *	Handles t[v] option - opens the archive and then reads headers,
  *	skipping member contents.
  */
-int
-contents(argv)
-	register char **argv;
-{
-	register int afd, all;
+int contents(char **argv) {
+	int afd, all;
 	struct tm *tp;
 	char *file, buf[25];
-	
+
 	afd = open_archive(O_RDONLY);
 
 	for (all = !*argv; get_arobj(afd);) {
@@ -84,40 +81,42 @@ contents(argv)
 			goto next;
 		if (options & AR_V) {
 			(void)strmode(chdr.mode, buf);
-			(void)printf("%s %6d/%-6d %8ld ",
-			    buf + 1, chdr.uid, chdr.gid, chdr.size);
+			(void)printf("%s %6d/%-6d %8ld ", buf + 1, chdr.uid, chdr.gid,
+						 chdr.size);
 			tp = localtime(&chdr.date);
-#ifdef	bloat
+#ifdef bloat
 			(void)strftime(buf, sizeof(buf), "%b %e %H:%M %Y", tp);
 			(void)printf("%s %s\n", buf, file);
 #else
 			{
-/*
- * Bloat avoidance alert!  Doing the date this way saves dragging in not only
- * strftime() but mktime() and ctime() for a savings of over 8kb.  God, those
- * leap seconds or whatever don't come cheap, the old (4.3BSD) timezone code
- * was big enough but this new stuff (posix?) is horrid.
-*/
-			static char *months[] = {"Jan", "Feb", "Mar", "Apr",
-						 "May", "Jun", "Jul", "Aug",
-						 "Sep", "Oct", "Nov", "Dec"};
+				/*
+				 * Bloat avoidance alert!  Doing the date this way saves
+				 * dragging in not only strftime() but mktime() and ctime() for
+				 * a savings of over 8kb.  God, those leap seconds or whatever
+				 * don't come cheap, the old (4.3BSD) timezone code was big
+				 * enough but this new stuff (posix?) is horrid.
+				 */
+				static char *months[] = {"Jan", "Feb", "Mar", "Apr",
+										 "May", "Jun", "Jul", "Aug",
+										 "Sep", "Oct", "Nov", "Dec"};
 
-			(void)printf("%s %02d %02d:%02d %4d %s\n",
-				months[tp->tm_mon], tp->tm_mday, tp->tm_hour,
-				tp->tm_min, 1900+tp->tm_year, file);
+				(void)printf("%s %02d %02d:%02d %4d %s\n", months[tp->tm_mon],
+							 tp->tm_mday, tp->tm_hour, tp->tm_min,
+							 1900 + tp->tm_year, file);
 			}
 #endif
 		} else
 			(void)printf("%s\n", file);
 		if (!all && !*argv)
 			break;
-next:		skip_arobj(afd);
-	} 
+	next:
+		skip_arobj(afd);
+	}
 	close_archive(afd);
 
 	if (*argv) {
 		orphans(argv);
-		return(1);
+		return (1);
 	}
-	return(0);
+	return (0);
 }

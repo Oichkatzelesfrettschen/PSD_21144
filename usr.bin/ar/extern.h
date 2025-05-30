@@ -33,16 +33,21 @@
  *	@(#)extern.h	5.1 (Berkeley) 4/3/91
  */
 
-void	badfmt(void);
-void	error(char *);
-void	orphans(char **);
-int	    compare(char *);
-int	    tmp(void);
-char	*files(char **);
-char	*rname(char *);
-void	strmode(mode_t, char *);
-int		extract(char **);
-int		delete(char **);
-//extern  long strtol();
-//extern	off_t lseek();
-//extern	char *getenv();
+void badfmt(void);
+void error(char *);
+void orphans(char **);
+int compare(char *);
+int tmp(void);
+char *files(char **);
+char *rname(char *);
+int append(char **);
+int contents(char **);
+int delete(char **);
+int extract(char **);
+int move(char **);
+int print(char **);
+int replace(char **);
+void strmode(mode_t, char *);
+// extern  long strtol();
+// extern	off_t lseek();
+// extern	char *getenv();

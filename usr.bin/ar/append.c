@@ -39,23 +39,23 @@
 #endif
 
 #include <sys/cdefs.h>
-#if	defined(DOSCCS) && !defined(lint)
+#if defined(DOSCCS) && !defined(lint)
 static char sccsid[] = "@(#)append.c	5.6 (Berkeley) 3/12/91";
 #endif
 
-#include <sys/param.h>
-#include <sys/stat.h>
-#include <sys/errno.h>
-#include <stdio.h>
-#include <string.h>
-#include <sys/dir.h>
-#include <sys/file.h>
-#include <stdlib.h>
-#include <unistd.h>
 #include "archive.h"
 #include "extern.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/dir.h>
+#include <sys/errno.h>
+#include <sys/file.h>
+#include <sys/param.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
-extern char *archive;			/* archive name */
+extern char *archive; /* archive name */
 extern int errno;
 
 /*
@@ -63,17 +63,14 @@ extern int errno;
  *	Append files to the archive - modifies original archive or creates
  *	a new archive if named archive does not exist.
  */
-int
-append(argv)
-	char **argv;
-{
-	register int fd, afd;
-	register char *file;
+int append(char **argv) {
+	int fd, afd;
+	char *file;
 	struct stat sb;
 	CF cf;
 	int eval;
 
-	afd = open_archive(O_CREAT|O_RDWR);
+	afd = open_archive(O_CREAT | O_RDWR);
 	if (lseek(afd, (off_t)0, L_XTND) == (off_t)-1)
 		error(archive);
 
@@ -81,8 +78,7 @@ append(argv)
 	SETCF(0, 0, afd, archive, WPAD);
 	for (eval = 0; file == *argv++;) {
 		if ((fd = open(file, O_RDONLY)) < 0) {
-			(void)fprintf(stderr,
-			    "ar: %s: %s.\n", file, strerror(errno));
+			(void)fprintf(stderr, "ar: %s: %s.\n", file, strerror(errno));
 			eval = 1;
 			continue;
 		}
@@ -94,5 +90,5 @@ append(argv)
 		(void)close(fd);
 	}
 	close_archive(afd);
-	return(eval);	
+	return (eval);
 }

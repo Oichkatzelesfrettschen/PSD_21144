@@ -47,114 +47,110 @@ __RCSID("$NetBSD: col.c,v 1.13 2003/10/16 06:45:22 itojun Exp $");
 
 #include <ctype.h>
 #include <err.h>
-#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
-#define	BS	'\b'		/* backspace */
-#define	TAB	'\t'		/* tab */
-#define	SPACE	' '		/* space */
-#define	NL	'\n'		/* newline */
-#define	CR	'\r'		/* carriage return */
-#define	ESC	'\033'		/* escape */
-#define	SI	'\017'		/* shift in to normal character set */
-#define	SO	'\016'		/* shift out to alternate character set */
-#define	VT	'\013'		/* vertical tab (aka reverse line feed) */
-#define	RLF	'\007'		/* ESC-07 reverse line feed */
-#define	RHLF	'\010'		/* ESC-010 reverse half-line feed */
-#define	FHLF	'\011'		/* ESC-011 forward half-line feed */
+#define BS '\b'		/* backspace */
+#define TAB '\t'	/* tab */
+#define SPACE ' '	/* space */
+#define NL '\n'		/* newline */
+#define CR '\r'		/* carriage return */
+#define ESC '\033'	/* escape */
+#define SI '\017'	/* shift in to normal character set */
+#define SO '\016'	/* shift out to alternate character set */
+#define VT '\013'	/* vertical tab (aka reverse line feed) */
+#define RLF '\007'	/* ESC-07 reverse line feed */
+#define RHLF '\010' /* ESC-010 reverse half-line feed */
+#define FHLF '\011' /* ESC-011 forward half-line feed */
 
 /* build up at least this many lines before flushing them out */
-#define	BUFFER_MARGIN		32
+#define BUFFER_MARGIN 32
 
 typedef char CSET;
 
 typedef struct char_str {
-#define	CS_NORMAL	1
-#define	CS_ALTERNATE	2
-	short		c_column;	/* column character is in */
-	CSET		c_set;		/* character set (currently only 2) */
-	char		c_char;		/* character in question */
+#define CS_NORMAL 1
+#define CS_ALTERNATE 2
+	short c_column; /* column character is in */
+	CSET c_set;		/* character set (currently only 2) */
+	char c_char;	/* character in question */
 } CHAR;
 
 typedef struct line_str LINE;
 struct line_str {
-	CHAR	*l_line;		/* characters on the line */
-	LINE	*l_prev;		/* previous line */
-	LINE	*l_next;		/* next line */
-	int	l_lsize;		/* allocated sizeof l_line */
-	int	l_line_len;		/* strlen(l_line) */
-	int	l_needs_sort;		/* set if chars went in out of order */
-	int	l_max_col;		/* max column in the line */
+	CHAR *l_line;	  /* characters on the line */
+	LINE *l_prev;	  /* previous line */
+	LINE *l_next;	  /* next line */
+	int l_lsize;	  /* allocated sizeof l_line */
+	int l_line_len;	  /* strlen(l_line) */
+	int l_needs_sort; /* set if chars went in out of order */
+	int l_max_col;	  /* max column in the line */
 };
 
-LINE   *alloc_line __P((void));
-void	dowarn __P((int));
-void	flush_line __P((LINE *));
-void	flush_lines __P((int));
-void	flush_blanks __P((void));
-void	free_line __P((LINE *));
-int	main __P((int, char **));
-void	usage __P((void));
-void	wrerr __P((void));
-void   *xmalloc __P((void *, size_t));
+/* Function prototypes using C90-style declarations. */
+static LINE *alloc_line(void);
+static void dowarn(int line);
+static void flush_line(LINE *l);
+static void flush_lines(int nflush);
+static void flush_blanks(void);
+static void free_line(LINE *l);
+static void usage(void);
+static void wrerr(void);
+static void *xmalloc(void *p, size_t size);
+int main(int argc, char **argv);
 
-CSET	last_set;		/* char_set of last char printed */
-LINE   *lines;
-int	compress_spaces;	/* if doing space -> tab conversion */
-int	fine;			/* if `fine' resolution (half lines) */
-int	max_bufd_lines;		/* max # lines to keep in memory */
-int	nblank_lines;		/* # blanks after last flushed line */
-int	no_backspaces;		/* if not to output any backspaces */
-int	pass_unknown_seqs;	/* whether to pass unknown control sequences */
+CSET last_set; /* char_set of last char printed */
+LINE *lines;
+int compress_spaces;   /* if doing space -> tab conversion */
+int fine;			   /* if `fine' resolution (half lines) */
+int max_bufd_lines;	   /* max # lines to keep in memory */
+int nblank_lines;	   /* # blanks after last flushed line */
+int no_backspaces;	   /* if not to output any backspaces */
+int pass_unknown_seqs; /* whether to pass unknown control sequences */
 
-#define	PUTC(ch) \
-	if (putchar(ch) == EOF) \
+#define PUTC(ch)                                                               \
+	if (putchar(ch) == EOF)                                                    \
 		wrerr();
 
-int
-main(argc, argv)
-	int argc;
-	char **argv;
-{
+int main(int argc, char **argv) {
 	int ch;
 	CHAR *c;
-	CSET cur_set;			/* current character set */
-	LINE *l;			/* current line */
-	int extra_lines;		/* # of lines above first line */
-	int cur_col;			/* current column */
-	int cur_line;			/* line number of current position */
-	int max_line;			/* max value of cur_line */
-	int this_line;			/* line l points to */
-	int nflushd_lines;		/* number of lines that were flushed */
+	CSET cur_set;	   /* current character set */
+	LINE *l;		   /* current line */
+	int extra_lines;   /* # of lines above first line */
+	int cur_col;	   /* current column */
+	int cur_line;	   /* line number of current position */
+	int max_line;	   /* max value of cur_line */
+	int this_line;	   /* line l points to */
+	int nflushd_lines; /* number of lines that were flushed */
 	int adjust, opt, warned;
 
 	max_bufd_lines = 128;
-	compress_spaces = 1;		/* compress spaces into tabs */
-	pass_unknown_seqs = 0;		/* remove unknown escape sequences */
+	compress_spaces = 1;   /* compress spaces into tabs */
+	pass_unknown_seqs = 0; /* remove unknown escape sequences */
 	while ((opt = getopt(argc, argv, "bfhl:px")) != -1)
 		switch (opt) {
-		case 'b':		/* do not output backspaces */
+		case 'b': /* do not output backspaces */
 			no_backspaces = 1;
 			break;
-		case 'f':		/* allow half forward line feeds */
+		case 'f': /* allow half forward line feeds */
 			fine = 1;
 			break;
-		case 'h':		/* compress spaces into tabs */
+		case 'h': /* compress spaces into tabs */
 			compress_spaces = 1;
 			break;
-		case 'l':		/* buffered line count */
+		case 'l': /* buffered line count */
 			if ((max_bufd_lines = atoi(optarg)) <= 0) {
-				(void)fprintf(stderr,
-				    "col: bad -l argument %s.\n", optarg);
+				(void)fprintf(stderr, "col: bad -l argument %s.\n", optarg);
 				exit(EXIT_FAILURE);
 			}
 			break;
-		case 'p':		/* pass unknown control sequences */
+		case 'p': /* pass unknown control sequences */
 			pass_unknown_seqs = 1;
 			break;
-		case 'x':		/* do not compress spaces into tabs */
+		case 'x': /* do not compress spaces into tabs */
 			compress_spaces = 0;
 			break;
 		case '?':
@@ -176,7 +172,7 @@ main(argc, argv)
 	while ((ch = getchar()) != EOF) {
 		if (!isgraph(ch)) {
 			switch (ch) {
-			case BS:		/* can't go back further */
+			case BS: /* can't go back further */
 				if (cur_col == 0)
 					continue;
 				--cur_col;
@@ -184,8 +180,8 @@ main(argc, argv)
 			case CR:
 				cur_col = 0;
 				continue;
-			case ESC:		/* just ignore EOF */
-				switch(getchar()) {
+			case ESC: /* just ignore EOF */
+				switch (getchar()) {
 				case RLF:
 					cur_line -= 2;
 					break;
@@ -213,7 +209,7 @@ main(argc, argv)
 			case SO:
 				cur_set = CS_ALTERNATE;
 				continue;
-			case TAB:		/* adjust column */
+			case TAB: /* adjust column */
 				cur_col |= 7;
 				++cur_col;
 				continue;
@@ -285,8 +281,8 @@ main(argc, argv)
 			int need;
 
 			need = l->l_lsize ? l->l_lsize * 2 : 90;
-			l->l_line = (CHAR *)xmalloc((void *) l->l_line,
-			    (unsigned) need * sizeof(CHAR));
+			l->l_line = (CHAR *)xmalloc((void *)l->l_line,
+										(unsigned)need * sizeof(CHAR));
 			l->l_lsize = need;
 		}
 		c = &l->l_line[l->l_line_len++];
@@ -304,7 +300,7 @@ main(argc, argv)
 		cur_col++;
 	}
 	if (max_line == 0)
-		exit(EXIT_SUCCESS);	/* no lines, so just exit */
+		exit(EXIT_SUCCESS); /* no lines, so just exit */
 
 	/* goto the last line that had a character on it */
 	for (; l->l_next; l = l->l_next)
@@ -327,10 +323,7 @@ main(argc, argv)
 	/* NOTREACHED */
 }
 
-void
-flush_lines(nflush)
-	int nflush;
-{
+static void flush_lines(int nflush) {
 	LINE *l;
 
 	while (--nflush >= 0) {
@@ -354,9 +347,7 @@ flush_lines(nflush)
  * is the number of half line feeds, otherwise it is the number of whole line
  * feeds.
  */
-void
-flush_blanks()
-{
+static void flush_blanks(void) {
 	int half, i, nb;
 
 	half = 0;
@@ -383,10 +374,7 @@ flush_blanks()
  * Write a line to stdout taking care of space to tab conversion (-h flag)
  * and character set shifts.
  */
-void
-flush_line(l)
-	LINE *l;
-{
+static void flush_line(LINE *l) {
 	CHAR *c, *endc;
 	int nchars, last_col, this_col;
 
@@ -404,12 +392,12 @@ flush_line(l)
 		if (l->l_lsize > sorted_size) {
 			sorted_size = l->l_lsize;
 			sorted = (CHAR *)xmalloc((void *)sorted,
-			    (unsigned)sizeof(CHAR) * sorted_size);
+									 (unsigned)sizeof(CHAR) * sorted_size);
 		}
 		if (l->l_max_col >= count_size) {
 			count_size = l->l_max_col + 1;
 			count = (int *)xmalloc((void *)count,
-			    (unsigned)sizeof(int) * count_size);
+								   (unsigned)sizeof(int) * count_size);
 		}
 		(void)memset(count, 0, sizeof(int) * l->l_max_col + 1);
 		for (i = nchars, c = l->l_line; --i >= 0; c++)
@@ -479,13 +467,11 @@ flush_line(l)
 	}
 }
 
-#define	NALLOC 64
+#define NALLOC 64
 
 static LINE *line_freelist;
 
-LINE *
-alloc_line()
-{
+static LINE *alloc_line(void) {
 	LINE *l;
 	int i;
 
@@ -503,20 +489,13 @@ alloc_line()
 	return (l);
 }
 
-void
-free_line(l)
-	LINE *l;
-{
+static void free_line(LINE *l) {
 
 	l->l_next = line_freelist;
 	line_freelist = l;
 }
 
-void *
-xmalloc(p, size)
-	void *p;
-	size_t size;
-{
+static void *xmalloc(void *p, size_t size) {
 	void *q;
 
 	if (!(q = (void *)realloc(p, size)))
@@ -525,27 +504,20 @@ xmalloc(p, size)
 	return (p);
 }
 
-void
-usage()
-{
+static void usage(void) {
 
 	(void)fprintf(stderr, "usage: col [-bfpx] [-l nline]\n");
 	exit(EXIT_FAILURE);
 }
 
-void
-wrerr()
-{
+static void wrerr(void) {
 
 	(void)fprintf(stderr, "col: write error.\n");
 	exit(EXIT_FAILURE);
 }
 
-void
-dowarn(line)
-	int line;
-{
+static void dowarn(int line) {
 
 	warnx("warning: can't back up %s",
-		line < 0 ? "past first line" : "-- line already flushed");
+		  line < 0 ? "past first line" : "-- line already flushed");
 }

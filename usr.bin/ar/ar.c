@@ -39,29 +39,29 @@
 #endif
 
 #include <sys/cdefs.h>
-#if	defined(DOSCCS) && !defined(lint)
+#if defined(DOSCCS) && !defined(lint)
 char copyright[] =
-"@(#) Copyright (c) 1990 The Regents of the University of California.\n\
+	"@(#) Copyright (c) 1990 The Regents of the University of California.\n\
  All rights reserved.\n";
 
 static char sccsid[] = "@(#)ar.c	5.11 (Berkeley) 3/21/91";
 #endif
 
-#include <sys/param.h>
-#include <sys/errno.h>
 #include <sys/dir.h>
+#include <sys/errno.h>
+#include <sys/param.h>
 
-#include <stdio.h>
-#include <ar.h>
-#include <string.h>
-#include <stdlib.h>
-#include <paths.h>
-#include <unistd.h>
 #include "archive.h"
 #include "extern.h"
+#include <ar.h>
+#include <paths.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
-//extern char *malloc();
-//extern int errno;
+// extern char *malloc();
+// extern int errno;
 
 CHDR chdr;
 u_int options;
@@ -74,15 +74,12 @@ static void badoptions(char *), usage(void);
  *	functions.  Some hacks that let us be backward compatible with 4.3 ar
  *	option parsing and sanity checking.
  */
-int
-main(argc, argv)
-	int argc;
-	char **argv;
-{
+int main(int argc, char **argv) {
 	extern int optind;
 	int c;
 	char *p;
-	int (*fcall)();//, append(), contents(), delete(), extract(), move(), print(), replace();
+	int (*fcall)(); //, append(), contents(), delete(), extract(), move(),
+					// print(), replace();
 
 	if (argc < 3)
 		usage();
@@ -90,7 +87,7 @@ main(argc, argv)
 	/*
 	 * Historic versions didn't require a '-' in front of the options.
 	 * Fix it, if necessary.
-	*/
+	 */
 	if (*argv[1] != '-') {
 		if (!(p = malloc((u_int)(strlen(argv[1]) + 2)))) {
 			(void)fprintf(stderr, "ar: %s.\n", strerror(errno));
@@ -102,7 +99,7 @@ main(argc, argv)
 	}
 
 	while ((c = getopt(argc, argv, "abcdilmopqrTtuvx")) != EOF) {
-		switch(c) {
+		switch (c) {
 		case 'a':
 			options |= AR_A;
 			break;
@@ -117,7 +114,7 @@ main(argc, argv)
 			options |= AR_D;
 			fcall = delete(argv);
 			break;
-		case 'l':		/* not documented, compatibility only */
+		case 'l': /* not documented, compatibility only */
 			envtmp = ".";
 			break;
 		case 'm':
@@ -165,46 +162,45 @@ main(argc, argv)
 	argc -= optind;
 
 	/* One of -dmpqrtx required. */
-	if (!(options & (AR_D|AR_M|AR_P|AR_Q|AR_R|AR_T|AR_X))) {
-		(void)fprintf(stderr,
-		    "ar: one of options -dmpqrtx is required.\n");
+	if (!(options & (AR_D | AR_M | AR_P | AR_Q | AR_R | AR_T | AR_X))) {
+		(void)fprintf(stderr, "ar: one of options -dmpqrtx is required.\n");
 		usage();
 	}
 	/* Only one of -a and -bi allowed. */
 	if ((options & AR_A) && (options & AR_B)) {
 		(void)fprintf(stderr,
-		    "ar: only one of -a and -[bi] options allowed.\n");
+					  "ar: only one of -a and -[bi] options allowed.\n");
 		usage();
 	}
 	/* -ab require a position argument. */
-	if (options & (AR_A|AR_B)) {
+	if (options & (AR_A | AR_B)) {
 		if (!(posarg = *argv++)) {
-			(void)fprintf(stderr,
-			    "ar: no position operand specified.\n");
+			(void)fprintf(stderr, "ar: no position operand specified.\n");
 			usage();
 		}
 		posname = rname(posarg);
 	}
 	/* -d only valid with -Tv. */
-	if ((options & AR_D) && (options & ~(AR_D|AR_TR|AR_V)))
+	if ((options & AR_D) && (options & ~(AR_D | AR_TR | AR_V)))
 		badoptions("-d");
 	/* -m only valid with -abiTv. */
-	if ((options & AR_M) && (options & ~(AR_A|AR_B|AR_M|AR_TR|AR_V)))
+	if ((options & AR_M) && (options & ~(AR_A | AR_B | AR_M | AR_TR | AR_V)))
 		badoptions("-m");
 	/* -p only valid with -Tv. */
-	if ((options & AR_P) && (options & ~(AR_P|AR_TR|AR_V)))
+	if ((options & AR_P) && (options & ~(AR_P | AR_TR | AR_V)))
 		badoptions("-p");
 	/* -q only valid with -cTv. */
-	if ((options & AR_Q) && (options & ~(AR_C|AR_Q|AR_TR|AR_V)))
+	if ((options & AR_Q) && (options & ~(AR_C | AR_Q | AR_TR | AR_V)))
 		badoptions("-q");
 	/* -r only valid with -abcuTv. */
-	if ((options & AR_R) && (options & ~(AR_A|AR_B|AR_C|AR_R|AR_U|AR_TR|AR_V)))
+	if ((options & AR_R) &&
+		(options & ~(AR_A | AR_B | AR_C | AR_R | AR_U | AR_TR | AR_V)))
 		badoptions("-r");
 	/* -t only valid with -Tv. */
-	if ((options & AR_T) && (options & ~(AR_T|AR_TR|AR_V)))
+	if ((options & AR_T) && (options & ~(AR_T | AR_TR | AR_V)))
 		badoptions("-t");
 	/* -x only valid with -ouTv. */
-	if ((options & AR_X) && (options & ~(AR_O|AR_U|AR_TR|AR_V|AR_X)))
+	if ((options & AR_X) && (options & ~(AR_O | AR_U | AR_TR | AR_V | AR_X)))
 		badoptions("-x");
 
 	if (!(archive = *argv++)) {
@@ -213,7 +209,7 @@ main(argc, argv)
 	}
 
 	/* -dmqr require a list of archive elements. */
-	if ((options & (AR_D|AR_M|AR_Q|AR_R)) && !*argv) {
+	if ((options & (AR_D | AR_M | AR_Q | AR_R)) && !*argv) {
 		(void)fprintf(stderr, "ar: no archive members specified.\n");
 		usage();
 	}
@@ -221,18 +217,12 @@ main(argc, argv)
 	exit((*fcall)(argv));
 }
 
-static void
-badoptions(arg)
-	char *arg;
-{
-	(void)fprintf(stderr,
-	    "ar: illegal option combination for %s.\n", arg);
+static void badoptions(char *arg) {
+	(void)fprintf(stderr, "ar: illegal option combination for %s.\n", arg);
 	usage();
 }
 
-static void
-usage()
-{
+static void usage(void) {
 	(void)fprintf(stderr, "usage:  ar -d [-Tv] archive file ...\n");
 	(void)fprintf(stderr, "\tar -m [-Tv] archive file ...\n");
 	(void)fprintf(stderr, "\tar -m [-abiTv] position archive file ...\n");
@@ -243,4 +233,4 @@ usage()
 	(void)fprintf(stderr, "\tar -t [-Tv] archive [file ...]\n");
 	(void)fprintf(stderr, "\tar -x [-ouTv] archive [file ...]\n");
 	exit(1);
-}	
+}

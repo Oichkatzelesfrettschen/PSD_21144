@@ -57,55 +57,51 @@ __RCSID("$NetBSD: jot.c,v 1.11 2004/01/05 23:23:34 jmmv Exp $");
 #include <time.h>
 #include <unistd.h>
 
-#define	REPS_DEF	100
-#define	BEGIN_DEF	1
-#define	ENDER_DEF	100
-#define	STEP_DEF	1
+#define REPS_DEF 100
+#define BEGIN_DEF 1
+#define ENDER_DEF 100
+#define STEP_DEF 1
 
-#define	is_default(s)	(strcmp((s), "-") == 0)
+#define is_default(s) (strcmp((s), "-") == 0)
 
-double	begin;
-double	ender;
-double	s;
-long	reps;
-int	randomize;
-int	infinity;
-int	boring;
-int	prec;
-int	dox;
-int	chardata;
-int	nofinalnl;
-char	sepstring[BUFSIZ] = "\n";
-char	format[BUFSIZ];
+double begin;
+double ender;
+double s;
+long reps;
+int randomize;
+int infinity;
+int boring;
+int prec;
+int dox;
+int chardata;
+int nofinalnl;
+char sepstring[BUFSIZ] = "\n";
+char format[BUFSIZ];
 
-void	getargs __P((int, char *[]));
-void	getformat __P((void));
-int	getprec __P((char *));
-int	main __P((int, char **));
-void	putdata __P((double, long));
-static void	usage __P((void));
+/* Function prototypes using C90-style declarations. */
+static void getargs(int argc, char **argv);
+static void getformat(void);
+static int getprec(char *s);
+static void putdata(double x, long notlast);
+static void usage(void);
+int main(int argc, char **argv);
 
-int
-main(argc, argv)
-	int argc;
-	char *argv[];
-{
-	double	xd, yd;
-	long	id;
-	double	*x = &xd;
-	double	*y = &yd;
-	long	*i = &id;
+int main(int argc, char **argv) {
+	double xd, yd;
+	long id;
+	double *x = &xd;
+	double *y = &yd;
+	long *i = &id;
 
 	getargs(argc, argv);
 	if (randomize) {
 		*x = (ender - begin) * (ender > begin ? 1 : -1);
-		srandom((unsigned long) s);
+		srandom((unsigned long)s);
 		for (*i = 1; *i <= reps || infinity; (*i)++) {
-			*y = (double) random() / INT_MAX;
+			*y = (double)random() / INT_MAX;
 			putdata(*y * *x + begin, reps - *i);
 		}
-	}
-	else
+	} else
 		for (*i = 1, *x = begin; *i <= reps || infinity; (*i)++, *x += s)
 			putdata(*x, reps - *i);
 	if (!nofinalnl)
@@ -113,13 +109,9 @@ main(argc, argv)
 	exit(0);
 }
 
-void
-getargs(argc, argv)
-	int argc;
-	char *argv[];
-{
-	unsigned int	mask = 0;
-	int		n = 0;
+static void getargs(int argc, char **argv) {
+	unsigned int mask = 0;
+	int n = 0;
 
 	while (--argc && **++argv == '-' && !is_default(*argv))
 		switch ((*argv)[1]) {
@@ -165,7 +157,7 @@ getargs(argc, argv)
 			usage();
 		}
 
-	switch (argc) {	/* examine args right to left, falling thru cases */
+	switch (argc) { /* examine args right to left, falling thru cases */
 	case 4:
 		if (!is_default(argv[3])) {
 			if (!sscanf(argv[3], "%lf", &s))
@@ -175,7 +167,7 @@ getargs(argc, argv)
 	case 3:
 		if (!is_default(argv[2])) {
 			if (!sscanf(argv[2], "%lf", &ender))
-				ender = argv[2][strlen(argv[2])-1];
+				ender = argv[2][strlen(argv[2]) - 1];
 			mask |= 02;
 			if (!prec)
 				n = getprec(argv[2]);
@@ -183,11 +175,11 @@ getargs(argc, argv)
 	case 2:
 		if (!is_default(argv[1])) {
 			if (!sscanf(argv[1], "%lf", &begin))
-				begin = argv[1][strlen(argv[1])-1];
+				begin = argv[1][strlen(argv[1]) - 1];
 			mask |= 04;
 			if (!prec)
 				prec = getprec(argv[1]);
-			if (n > prec)		/* maximum precision */
+			if (n > prec) /* maximum precision */
 				prec = n;
 		}
 	case 1:
@@ -204,8 +196,8 @@ getargs(argc, argv)
 		errx(1, "Too many arguments.  What do you mean by %s?", argv[4]);
 	}
 	getformat();
-	while (mask)	/* 4 bit mask has 1's where last 4 args were given */
-		switch (mask) {	/* fill in the 0's by default or computation */
+	while (mask)		/* 4 bit mask has 1's where last 4 args were given */
+		switch (mask) { /* fill in the 0's by default or computation */
 		case 001:
 			reps = REPS_DEF;
 			mask = 011;
@@ -288,12 +280,12 @@ getargs(argc, argv)
 				s = (ender - begin) / (reps - 1);
 			mask = 0;
 			break;
-		case 017:		/* if reps given and implied, */
+		case 017: /* if reps given and implied, */
 			if (!randomize && s != 0.0) {
 				long t = (ender - begin + s) / s;
 				if (t <= 0)
 					errx(1, "Impossible stepsize");
-				if (t < reps)		/* take lesser */
+				if (t < reps) /* take lesser */
 					reps = t;
 			}
 			mask = 0;
@@ -305,47 +297,35 @@ getargs(argc, argv)
 		infinity = 1;
 }
 
-void
-putdata(x, notlast)
-	double x;
-	long notlast;
-{
-	long	d = x;
-	long	*dp = &d;
+static void putdata(double x, long notlast) {
+	long d = x;
+	long *dp = &d;
 
-	if (boring)				/* repeated word */
+	if (boring) /* repeated word */
 		printf("%s", format);
-	else if (dox)				/* scalar */
+	else if (dox) /* scalar */
 		printf(format, *dp);
-	else					/* real */
+	else /* real */
 		printf(format, x);
 	if (notlast != 0)
 		fputs(sepstring, stdout);
 }
 
-static void
-usage(void)
-{
+static void usage(void) {
 	fprintf(stderr, "jot - print sequential or random data\n\n");
 	fprintf(stderr,
-	    "usage:\n\tjot [ options ] [ reps [ begin [ end [ s ] ] ] ]\n\n");
+			"usage:\n\tjot [ options ] [ reps [ begin [ end [ s ] ] ] ]\n\n");
 	fprintf(stderr, "Options:\n\t%s\t%s\t%s\t%s\t%s\t%s\t%s",
-			"-r		random data\n",
-			"-c		character data\n",
-			"-n		no final newline\n",
-			"-b word		repeated word\n",
-			"-w word		context word\n",
-			"-s string	data separator\n",
+			"-r		random data\n", "-c		character data\n",
+			"-n		no final newline\n", "-b word		repeated word\n",
+			"-w word		context word\n", "-s string	data separator\n",
 			"-p precision	number of characters\n");
 	exit(1);
 }
 
-int
-getprec(s)
-	char *s;
-{
-	char	*p;
-	char	*q;
+static int getprec(char *s) {
+	char *p;
+	char *q;
 
 	for (p = s; *p; p++)
 		if (*p == '.')
@@ -358,19 +338,17 @@ getprec(s)
 	return (p - q);
 }
 
-void
-getformat()
-{
-	char	*p;
-	size_t	sz;
+static void getformat(void) {
+	char *p;
+	size_t sz;
 
-	if (boring)				/* no need to bother */
+	if (boring) /* no need to bother */
 		return;
-	for (p = format; *p; p++)		/* look for '%' */
+	for (p = format; *p; p++) /* look for '%' */
 		if (*p == '%') {
-			if (*(p+1) != '%')
+			if (*(p + 1) != '%')
 				break;
-			p++;		/* leave %% alone */
+			p++; /* leave %% alone */
 		}
 	sz = sizeof(format) - strlen(format) - 1;
 	if (!*p) {
@@ -382,13 +360,13 @@ getformat()
 			if (snprintf(p, sz, "%%.%df", prec) >= (int)sz)
 				errx(1, "-w word too long");
 		}
-	} else if (!*(p+1)) {
+	} else if (!*(p + 1)) {
 		if (sz <= 0)
 			errx(1, "-w word too long");
-		strcat(format, "%");		/* cannot end in single '%' */
+		strcat(format, "%"); /* cannot end in single '%' */
 	} else {
-		p++;				/* skip leading % */
-		for(; *p && !isalpha((unsigned char)*p); p++) {
+		p++; /* skip leading % */
+		for (; *p && !isalpha((unsigned char)*p); p++) {
 			/* allow all valid printf(3) flags, but deny '*' */
 			if (!strchr("0123456789#-+. ", *p))
 				break;
@@ -397,26 +375,37 @@ getformat()
 		if (*p == 'l')
 			p++;
 		switch (*p) {
-		case 'f': case 'e': case 'g': case '%':
-		case 'E': case 'G':
+		case 'f':
+		case 'e':
+		case 'g':
+		case '%':
+		case 'E':
+		case 'G':
 			break;
 		case 's':
 			errx(1, "cannot convert numeric data to strings");
 			break;
-		case 'd': case 'o': case 'x': case 'u':
-		case 'D': case 'O': case 'X': case 'U':
-		case 'c': case 'i':
+		case 'd':
+		case 'o':
+		case 'x':
+		case 'u':
+		case 'D':
+		case 'O':
+		case 'X':
+		case 'U':
+		case 'c':
+		case 'i':
 			dox = 1;
 			break;
 		default:
 			errx(1, "unknown or invalid format `%s'", format);
 		}
 		/* Need to check for trailing stuff to print */
-		for (; *p; p++)		/* look for '%' */
+		for (; *p; p++) /* look for '%' */
 			if (*p == '%') {
-				if (*(p+1) != '%')
+				if (*(p + 1) != '%')
 					break;
-				p++;		/* leave %% alone */
+				p++; /* leave %% alone */
 			}
 		if (*p)
 			errx(1, "unknown or invalid format `%s'", format);
