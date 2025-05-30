@@ -112,7 +112,7 @@
 #define	___CONCAT(x,y)	__CONCAT(x,y)
 
 #if defined(__STDC__) || defined(__cplusplus)
-#define	__P(protos)		protos		/* full-blown ANSI C */
+#define __P(protos)             protos /* deprecated K&R compat */
 #define	__CONCAT(x,y)	x##y
 #define	__STRING(x)		#x
 
@@ -136,7 +136,7 @@
 #endif /* !__cplusplus */
 
 #else	/* !(__STDC__ || __cplusplus) */
-#define	__P(protos)		()			/* traditional C preprocessor */
+#define __P(protos)             protos /* deprecated K&R compat */
 #define	__CONCAT(x,y)	x/**/y
 #define	__STRING(x)		"x"
 
