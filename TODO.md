@@ -37,13 +37,14 @@ A General todo list. Don't hesitate to add to this list. :)
 - Libarchive: (Disabled)
 	- Issues with statfs. (Probably a config thing!)
  	- 2.11_X44 lacks support without numerous quick fixes (hacks). That will most likely be fixed in due time. 
-- XZ: (Disabled)
-	- Linker compiler time issue: Not finding symbols
+ - XZ: (Disabled)
+        - Linker/compiler issue: missing symbols during build
+          (see share/mk/bsd.own.mk around MKXZ for details)
  		- liblzma_pic.a(stream_encoder_mt.pico):(.text+0x2b7): undefined reference to `pthread_join'
    		- liblzma_pic.a(stream_encoder_mt.pico):(.text+0xd4e): undefined reference to `pthread_create'
  		- liblzma_pic.a(lzma_decoder.pico): in function `.L400': lzma_decoder.c:(.text+0x2b9a): undefined reference to `memmove'
    		- liblzma_pic.a(lz_encoder.pico): in function `.L11': lz_encoder.c:(.text+0x4ab): undefined reference to `memmove'
-     - Currently points to an xz compatability issue, with this issue not showing it's face elsewhere.
+     - Currently points to an xz compatibility issue, with this issue not showing elsewhere.
      	- Though should be interesting if it does present itself later on.
      - Due to xz not being esstential, it's requirement in the toolchain and dependents have become optional.
 
