@@ -49,6 +49,14 @@
 #include <string.h>
 #include <unistd.h>
 
+#ifndef __dead
+#if defined(__GNUC__)
+#define __dead __attribute__((__noreturn__))
+#else
+#define __dead
+#endif
+#endif
+
 #if defined(__RCSID) && !defined(__lint)
 __RCSID("$NetBSD: mktemp.c,v 1.12 2012/11/03 13:34:08 christos Exp $");
 #endif /* !__lint */
