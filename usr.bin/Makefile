@@ -5,7 +5,7 @@
 
 SUBDIR= apply ar asa at 											\
 		banner base64 basename bzip2 bzip2recover					\
-		c11 c89 c99 cal cap_mkdb cksum cmp col colcrt colrm column 	\
+		c11 c17 c89 c99 cal cap_mkdb cksum cmp col colcrt colrm column 	\
 		comm compress crontab crunch csplit ctags cut 				\
 		db dc deroff dirname du										\
 		elf2aout elf2ecoff env error expand							\

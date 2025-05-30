@@ -7,6 +7,6 @@ SRCS=	ldd_elfxx.c
 SRCS+=	xmalloc.c debug.c expand.c map_object.c load.c search.c \
 	headers.c paths.c tls.c symver.c
 
-CPPFLAGS.tls.c+=	-std=gnu11
+CPPFLAGS.tls.c+=	-std=gnu17
 
 .include "Makefile.common"
