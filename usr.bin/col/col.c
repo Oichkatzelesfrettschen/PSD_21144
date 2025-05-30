@@ -114,6 +114,14 @@ int pass_unknown_seqs; /* whether to pass unknown control sequences */
 	if (putchar(ch) == EOF)                                                    \
 		wrerr();
 
+/*
+ * Entry point for the col utility.
+ *
+ * argc - number of command line arguments
+ * argv - array of argument strings
+ *
+ * Returns EXIT_SUCCESS or exits with EXIT_FAILURE on error.
+ */
 int main(int argc, char **argv) {
 	int ch;
 	CHAR *c;
@@ -323,6 +331,13 @@ int main(int argc, char **argv) {
 	/* NOTREACHED */
 }
 
+/*
+ * Flush a number of lines from the internal buffer.
+ *
+ * nflush - number of lines to flush
+ *
+ * Returns nothing.
+ */
 static void flush_lines(int nflush) {
 	LINE *l;
 
@@ -343,9 +358,12 @@ static void flush_lines(int nflush) {
 }
 
 /*
- * Print a number of newline/half newlines.  If fine flag is set, nblank_lines
- * is the number of half line feeds, otherwise it is the number of whole line
- * feeds.
+ * Print buffered blank lines.
+ *
+ * The number of lines printed is held in nblank_lines.
+ * When fine is non-zero, odd values indicate half-line feeds.
+ *
+ * Returns nothing.
  */
 static void flush_blanks(void) {
 	int half, i, nb;
@@ -371,8 +389,11 @@ static void flush_blanks(void) {
 }
 
 /*
- * Write a line to stdout taking care of space to tab conversion (-h flag)
- * and character set shifts.
+ * Output a formatted line of text.
+ *
+ * l - pointer to the line structure to print
+ *
+ * Returns nothing.
  */
 static void flush_line(LINE *l) {
 	CHAR *c, *endc;
@@ -471,6 +492,11 @@ static void flush_line(LINE *l) {
 
 static LINE *line_freelist;
 
+/*
+ * Allocate a LINE structure from the freelist.
+ *
+ * Returns a pointer to a zeroed LINE structure.
+ */
 static LINE *alloc_line(void) {
 	LINE *l;
 	int i;
@@ -489,12 +515,25 @@ static LINE *alloc_line(void) {
 	return (l);
 }
 
+/*
+ * Return a LINE structure to the freelist.
+ *
+ * l - line to free
+ */
 static void free_line(LINE *l) {
 
 	l->l_next = line_freelist;
 	line_freelist = l;
 }
 
+/*
+ * Allocate or reallocate memory and exit on failure.
+ *
+ * p    - existing pointer or NULL
+ * size - size of memory block in bytes
+ *
+ * Returns the allocated pointer.
+ */
 static void *xmalloc(void *p, size_t size) {
 	void *q;
 
@@ -504,18 +543,29 @@ static void *xmalloc(void *p, size_t size) {
 	return (p);
 }
 
+/*
+ * Display usage information and exit.
+ */
 static void usage(void) {
 
 	(void)fprintf(stderr, "usage: col [-bfpx] [-l nline]\n");
 	exit(EXIT_FAILURE);
 }
 
+/*
+ * Terminate with a write error message.
+ */
 static void wrerr(void) {
 
 	(void)fprintf(stderr, "col: write error.\n");
 	exit(EXIT_FAILURE);
 }
 
+/*
+ * Issue a warning about backing up too far.
+ *
+ * line - relative position causing the warning
+ */
 static void dowarn(int line) {
 
 	warnx("warning: can't back up %s",
