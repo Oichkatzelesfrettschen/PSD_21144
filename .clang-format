@@ -1,9 +1,38 @@
-# We'll use defaults from the LLVM style, but with some modifications so that it's close to the CDT K&R style.
+# 2.11BSD_X44 Coding Style
+# ------------------------
+# This file defines the clang-format configuration used throughout the
+# repository. The style is derived from LLVM with C90 formatting and
+# uses tabs for indentation with a width of four spaces.
+
 BasedOnStyle: LLVM
+Language:        C
 UseTab: Always
 IndentWidth: 4
 TabWidth: 4
+BreakBeforeBraces: Attach
+AllowShortBlocksOnASingleLine: Never
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: Empty
+ColumnLimit: 0
+AlignAfterOpenBracket: Align
+AlignConsecutiveAssignments: true
+AlignConsecutiveDeclarations: true
+AlignTrailingComments: true
 PackConstructorInitializers: NextLineOnly
 BreakConstructorInitializers: AfterColon
 IndentAccessModifiers: false
 AccessModifierOffset: -4
+IndentCaseLabels: false
+IndentGotoLabels: true
+IndentPPDirectives: None
+PointerAlignment: Left
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+SpaceBeforeParens: ControlStatements
+SpaceBeforeRangeBasedForLoopColon: true
+SpaceAfterCStyleCast: true
+Cpp11BracedListStyle: false
+SpacesBeforeTrailingComments: 1
+KeepEmptyLinesAtTheStartOfBlocks: false
