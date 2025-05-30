@@ -18,8 +18,17 @@ if ! sudo apt-get update; then
     echo "apt-get update failed; using existing package lists" >&2
 fi
 
-# Packages required by the BSD build system.
-PKGS=(bmake byacc bison flex build-essential)
+# Packages required by the BSD build system as well as the ack tools.
+PKGS=(
+    bmake
+    byacc
+    bison
+    flex
+    build-essential
+    ack
+    ack-dev
+    ack-clang
+)
 
 # Install each package if not already installed.
 for pkg in "${PKGS[@]}"; do
