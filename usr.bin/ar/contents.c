@@ -55,7 +55,6 @@ static char sccsid[] = "@(#)contents.c	5.6 (Berkeley) 3/12/91";
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <time.h>
-#include <tzfile.h>
 #include <unistd.h>
 
 extern CHDR chdr;	  /* converted header */

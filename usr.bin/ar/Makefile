@@ -1,18 +1,16 @@
-#	@(#)Makefile	5.8 (Berkeley) 3/10/91
+CC ?= gcc
+CFLAGS ?= -Wall -Wextra -O2
+PROG = ar
+SRCS = append.c ar.c archive.c contents.c delete.c extract.c misc.c \
+       move.c print.c replace.c strmode.c
+OBJS = $(SRCS:.c=.o)
 
-WARNS= 5
+all: $(PROG)
 
-#.include <bsd.own.mk>
+$(PROG): $(OBJS)
+	$(CC) $(CFLAGS) -o $@ $(OBJS) -lutil
 
-PROG=   ar
-SRCS=	append.c ar.c archive.c contents.c delete.c extract.c misc.c \
-    	move.c print.c replace.c strmode.c
+clean:
+	rm -f $(PROG) $(OBJS)
 
-MAN=	ar.1 ar.5.5
-
-.if (${HOSTPROG:U} == "")
-DPADD+=		${LIBUTIL}
-LDADD+=		-lutil
-.endif
-
-.include <bsd.prog.mk>
+.PHONY: all clean

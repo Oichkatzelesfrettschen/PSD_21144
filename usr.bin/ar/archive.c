@@ -68,7 +68,8 @@ extern u_int options;
 typedef struct ar_hdr HDR;
 static char hb[sizeof(HDR) + 1]; /* real header */
 
-int int open_archive(int mode) {
+/* Open the archive with the specified mode. */
+int open_archive(int mode) {
 	int created, fd, nr;
 	char buf[SARMAG];
 
@@ -114,7 +115,8 @@ opened:
 	return (fd);
 }
 
-void void close_archive(int fd) { (void)close(fd); /* Implicit unlock. */ }
+/* Close the archive file; implicit unlock occurs. */
+void close_archive(int fd) { (void)close(fd); /* Implicit unlock. */ }
 
 /* Convert ar header field to an integer. */
 #define AR_ATOI(from, to, len, base)                                           \
@@ -128,7 +130,8 @@ void void close_archive(int fd) { (void)close(fd); /* Implicit unlock. */ }
  * get_arobj --
  *	read the archive header for this member
  */
-int int get_arobj(int fd) {
+/* Read the archive header for the current member. */
+int get_arobj(int fd) {
 	struct ar_hdr *hdr;
 	int len, nr;
 	char *p;
@@ -195,7 +198,8 @@ static int already_written;
  * put_arobj --
  *	Write an archive member to a file.
  */
-void void put_arobj(CF *cfp, struct stat *sb) {
+/* Write an archive member to a file. */
+void put_arobj(CF *cfp, struct stat *sb) {
 	int lname;
 	char *name;
 	struct ar_hdr *hdr;
@@ -266,7 +270,8 @@ void void put_arobj(CF *cfp, struct stat *sb) {
  *	because 16-bit word addressed copies were faster?)  Anyhow, it should
  *	have been ripped out long ago.
  */
-void void copy_ar(CF *cfp, off_t size) {
+/* Copy size bytes from one file to another. */
+void copy_ar(CF *cfp, off_t size) {
 	static char pad = '\n';
 	off_t sz;
 	int from, nr, nw, off, to;
@@ -307,7 +312,8 @@ void void copy_ar(CF *cfp, off_t size) {
  * skip_arobj -
  *	Skip over an object -- taking care to skip the pad bytes.
  */
-void void skip_arobj(int fd) {
+/* Skip over an object within the archive. */
+void skip_arobj(int fd) {
 	off_t len;
 
 	len = chdr.size + (chdr.size + chdr.lname & 1);
