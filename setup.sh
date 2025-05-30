@@ -8,22 +8,46 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Configure the build environment.
-# Add the "universe" repository when missing.
+# Add the "universe" repository when missing because several tools
+# used during the build are provided from it.
 if ! grep -q '^deb .\+universe' /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null; then
     sudo add-apt-repository -y universe
 fi
 
-# Refresh package lists; continue when the network is unavailable.
+# Refresh package lists. If the environment has no network connectivity
+# the build may still proceed using whatever packages are already
+# available in the cache.
 if ! sudo apt-get update; then
     echo "apt-get update failed; using existing package lists" >&2
 fi
 
-# Packages required by the BSD build system as well as the ack tools.
+# Verify that packages expected from the universe repository are
+# actually provided by it. The build may still succeed if this check
+# fails, but the user is notified about potential configuration issues.
+check_repo() {
+    local pkg=$1
+    local repo=$2
+    if ! apt-cache policy "$pkg" | grep -q "$repo"; then
+        echo "Warning: $pkg not found in the $repo repository" >&2
+    fi
+}
+
+check_repo bmake universe
+check_repo byacc universe
+check_repo flex universe
+if apt-cache policy bison | grep -q "universe"; then
+    echo "Warning: bison should come from the main repository" >&2
+fi
+
+# Packages required by the BSD build system and additional utilities
+# used during compilation.
 PKGS=(
     bmake
     byacc
     bison
     flex
+    cmake
+    clang
     build-essential
     ack
     ack-dev
