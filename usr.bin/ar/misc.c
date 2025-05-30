@@ -110,7 +110,8 @@ void orphans(char **argv) {
 		(void)fprintf(stderr, "ar: %s: not found in archive.\n", *argv);
 }
 
-char *char *rname(char *path) {
+/* Return just the filename from a given path. */
+char *rname(char *path) {
 	char *ind;
 
 	return ((ind = rindex(path, '/')) ? ind + 1 : path);
