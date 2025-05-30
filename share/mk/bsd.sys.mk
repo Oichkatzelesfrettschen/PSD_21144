@@ -14,12 +14,12 @@ error2:
 	@(echo "bsd.own.mk must be included before bsd.sys.mk" >& 2; exit 1)
 .endif
 
-# NetBSD sources use C99 style, with some GCC extensions.
-# Coverity does not like -std=gnu99
+# NetBSD sources use C17 style, with some GCC extensions.
+# Coverity does not like -std=gnu17
 .if !defined(COVERITY_TOP_CONFIG) && empty(CFLAGS:M*-std=*)
-CFLAGS+=	${${ACTIVE_CC} == "clang":? -std=gnu99 :}
-CFLAGS+=	${${ACTIVE_CC} == "gcc":? -std=gnu99 :}
-CFLAGS+=	${${ACTIVE_CC} == "pcc":? -std=gnu99 :}
+CFLAGS+=	${${ACTIVE_CC} == "clang":? -std=gnu17 :}
+CFLAGS+=	${${ACTIVE_CC} == "gcc":? -std=gnu17 :}
+CFLAGS+=	${${ACTIVE_CC} == "pcc":? -std=gnu17 :}
 .endif
 
 .if defined(WARNS)
