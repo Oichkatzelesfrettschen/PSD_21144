@@ -102,8 +102,8 @@ OR
 
 ## Porting:
 
-2.11BSD_X44 is open to being ported to different architectures.
-Though due to limited access to hardware, testing of 2.11BSD_X44 on that architecture will be dependent on the individual/group (especially more exotic hardware).
+PSD_21144 is being ported to different architectures.
+Though due to limited access to hardware, testing of PSD_21144 on that architecture will be dependent on the individual/group (especially more exotic hardware).
 
 ## Building:
 
@@ -115,7 +115,7 @@ network connection), the script continues and reports the error so you
 can install the tools manually.
 
 
-You can cross-build 211BSD_X44 from most UNIX-like operating systems. To build for i386, in the src directory:
+You can cross-build PSD_21144 from most UNIX-like operating systems. To build for i386, in the src directory:
 
 ./build.sh -U -u -j4 -m i386 -O ~/obj release
 
@@ -159,7 +159,7 @@ Cross-Compiler Compatability Table:
  - then run build.sh -c pcc. To use the pcc instead of gcc. 
 	
 ### Known OS's Supported:
-- Ubuntu (20.04 to 23.04)
+- Ubuntu (20.04 to 24.04)
 - Mint	 (21.x to 22)
 
 ## Contribution:
