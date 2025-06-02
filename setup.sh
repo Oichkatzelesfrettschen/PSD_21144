@@ -28,9 +28,16 @@ if command -v apt-get >/dev/null 2>&1; then
         flex
         build-essential
         clang
+        clang-format
+        clang-tidy
         cmake
         gcc
         g++
+        gdb
+        valgrind
+        lcov
+        shellcheck
+        python3-pip
         gcc-multilib
         g++-multilib
         libncurses-dev
