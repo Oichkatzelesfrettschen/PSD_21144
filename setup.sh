@@ -1,44 +1,44 @@
 #!/usr/bin/env bash
-# Setup script used to provision the build environment for 2.11BSD_X44.
-# It installs all needed tools using apt and pip then performs a basic
-# build of usr.bin/make when bmake is available.
+# Set up the build environment for PSD_21144.
+# Installs required packages and cleans PATH.
 
 set -euo pipefail
+IFS=$'\n\t'
 
-# Absolute path to the repository root so relative operations work no
-# matter where the script is executed from.
+# Determine repository root directory
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Only attempt package installation when apt-get is available.  Some
-# systems or restricted environments may not provide it.
+# Install packages when apt-get is available
 if command -v apt-get >/dev/null 2>&1; then
-    # Enable the "universe" repository if it has not already been added.
+    # Ensure universe repository is enabled
     if ! grep -q '^deb .\+universe' /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null; then
         sudo add-apt-repository -y universe
     fi
 
-    # Refresh package information.  Failure is not fatal in order to
-    # accommodate environments without network access.
+    # Refresh package lists; ignore failure
     if ! sudo apt-get update; then
-        echo "apt-get update failed; using existing package lists" >&2
+        echo "apt-get update failed; continuing" >&2
     fi
 
-    # Packages required for the BSD build system.
+    # List of packages needed for building
     apt_packages=(
         bmake
         byacc
         bison
         flex
-        cmake
-        clang
         build-essential
-        ack
-        ack-dev
-        ack-clang
+        clang
+        cmake
+        gcc
+        g++
+        gcc-multilib
+        g++-multilib
+        libncurses-dev
+        libssl-dev
+        nasm
     )
 
-    # Install each package if not present already.  Installation errors
-    # are reported but do not stop the remainder of the script.
+    # Install missing packages
     for pkg in "${apt_packages[@]}"; do
         if ! dpkg -s "$pkg" >/dev/null 2>&1; then
             if ! sudo apt-get install -y "$pkg"; then
@@ -48,43 +48,33 @@ if command -v apt-get >/dev/null 2>&1; then
     done
 fi
 
-# Install Python dependencies when pip is available.
-if command -v pip3 >/dev/null 2>&1; then
-    if [ -f "$ROOT_DIR/requirements.txt" ]; then
-        # Use --user so system packages are untouched.
-        pip3 install --user -r "$ROOT_DIR/requirements.txt"
-    fi
+# Install Python requirements if any
+if command -v pip3 >/dev/null 2>&1 && [ -f "$ROOT_DIR/requirements.txt" ]; then
+    pip3 install --user -r "$ROOT_DIR/requirements.txt"
 fi
 
-# Remove relative entries from PATH so build.sh behaves correctly.
+# Remove relative PATH entries
 CLEAN_PATH=""
 IFS=':'
 for dir in $PATH; do
     case "$dir" in
-        ''|'.')
+        ''|'.'|[!/]*)
             continue
             ;;
-        /*)
-            CLEAN_PATH="${CLEAN_PATH:+${CLEAN_PATH}:}${dir}"
-            ;;
         *)
-            echo "Removed relative path entry: $dir" >&2
+            CLEAN_PATH="${CLEAN_PATH:+${CLEAN_PATH}:}${dir}"
             ;;
     esac
 done
 unset IFS
 export PATH="$CLEAN_PATH"
 
-# Display the final PATH so callers know the configuration that will be
-# used for subsequent build steps.
 echo "Environment configured. PATH set to: $PATH"
 
-# Attempt a test build of usr.bin/make when bmake is installed.  This
-# provides a quick sanity check that the toolchain works.
+# Quick sanity build of bmake
 if command -v bmake >/dev/null 2>&1; then
     cd "$ROOT_DIR/usr.bin/make"
     bmake
 else
     echo "bmake is not installed; build skipped" >&2
 fi
-
