@@ -256,5 +256,7 @@ void	sched_compute(struct sched *, struct proc *);
 void	sched_check_threads(struct sched *, struct proc *);
 int	sched_create_threads(struct proc **, struct thread **, char *, size_t);
 void	sched_destroy_threads(struct proc *, int, int);
+void    sched_preempt_init(void);
+void    sched_preempt(struct proc *);
 #endif /* _KERNEL */
 #endif /* _SYS_SCHED_H */
