@@ -28,7 +28,6 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-
 #include <sys/lock.h>
 #include <sys/param.h>
 #include <sys/proc.h>
@@ -51,14 +50,14 @@
  * address space is temporarily unmapped.
  */
 static struct lwkt_token kf_token;
-static int kf_token_inited;
+static int				 kf_token_inited;
 
 void kern_fork_compat_init(void) {
 	lwkt_token_init(&kf_token, "kern_fork_compat");
 	kf_token_inited = 1;
 }
 
-int kern_fork_compat(struct proc *parent, struct proc *child, int isvfork) {
+int kern_fork_compat(struct proc* parent, struct proc* child, int isvfork) {
 	int error;
 
 	/* Assume the token has been initialised by system startup. */
@@ -92,20 +91,4 @@ int kern_fork_compat(struct proc *parent, struct proc *child, int isvfork) {
 	lwkt_reltoken(&kf_token);
 
 	return error;
-
-int kern_fork_compat(struct proc* parent, struct proc* child, int isvfork) {
-#ifdef OVERLAY
-	/* Detach overlays from parent during duplication */
-	ovlspace_mapout(parent->p_ovlspace);
-#endif
-
-	child->p_vmspace = vmspace_fork(parent->p_vmspace);
-
-#ifdef OVERLAY
-	/* Attach overlays to the new child */
-	ovlspace_mapin(child->p_ovlspace);
-#endif
-
-	return cpu_fork(parent, child);
-
 }

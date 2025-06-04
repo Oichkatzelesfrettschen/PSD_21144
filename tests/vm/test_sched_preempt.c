@@ -13,9 +13,9 @@ void sched_preempt_init(void);
 void sched_preempt(struct proc*); /* prototype from scheduler */
 
 int main(void) {
-        struct proc p = { 0 };
-        sched_preempt_init();
-        sched_preempt(&p);
-        printf("sched_preempt ok\n");
-        return 0;
+	struct proc p = { 0 };
+	sched_preempt_init();
+	sched_preempt(&p);
+	printf("sched_preempt ok\n");
+	return 0;
 }
