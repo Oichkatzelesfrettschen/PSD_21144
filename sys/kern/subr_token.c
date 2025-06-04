@@ -33,7 +33,7 @@
 /*
  * Initialize a lightweight token by wrapping a simple lock.
  */
-void lwkt_token_init(struct lwkt_token *tok, const char *name) {
+void lwkt_token_init(struct lwkt_token* tok, const char* name) {
 	simple_lock_init(&tok->t_lock, name);
 }
 
@@ -41,9 +41,13 @@ void lwkt_token_init(struct lwkt_token *tok, const char *name) {
  * Acquire a token. The current thread blocks until the underlying lock
  * becomes available.
  */
-void lwkt_gettoken(struct lwkt_token *tok) { simple_lock(&tok->t_lock); }
+void lwkt_gettoken(struct lwkt_token* tok) {
+	simple_lock(&tok->t_lock);
+}
 
 /*
  * Release a previously acquired token.
  */
-void lwkt_reltoken(struct lwkt_token *tok) { simple_unlock(&tok->t_lock); }
+void lwkt_reltoken(struct lwkt_token* tok) {
+	simple_unlock(&tok->t_lock);
+}

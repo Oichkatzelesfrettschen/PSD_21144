@@ -59,27 +59,24 @@ void setrunnable(struct proc*);
 
 /* lock protecting preemption operations */
 static simple_lock_data_t sched_preempt_lock;
-static int                sched_preempt_inited;
+static int				  sched_preempt_inited;
 
 /*
  * Initialize the preemption lock on first use.
  */
-void
-sched_preempt_init(void)
-{
-    simple_lock_init(&sched_preempt_lock, "sched_preempt");
-    sched_preempt_inited = 1;
+void sched_preempt_init(void) {
+	simple_lock_init(&sched_preempt_lock, "sched_preempt");
+	sched_preempt_inited = 1;
 }
 
 /*
  * sched_preempt - request a context switch if needed.
  * The implementation simply marks the process runnable under lock.
  */
-void sched_preempt(struct proc *p)
-{
-    if (!sched_preempt_inited)
-        sched_preempt_init();
-    simple_lock(&sched_preempt_lock);
-    setrunnable(p);
-    simple_unlock(&sched_preempt_lock);
+void sched_preempt(struct proc* p) {
+	if (!sched_preempt_inited)
+		sched_preempt_init();
+	simple_lock(&sched_preempt_lock);
+	setrunnable(p);
+	simple_unlock(&sched_preempt_lock);
 }
