@@ -37,6 +37,7 @@
 #endif
 
 /*
+
  * Accessor functions translating historic proc fields to the new vmspace
  * layout. These helpers flatten the indirection chain and avoid unsafe
  * macros.
@@ -108,5 +109,18 @@ proc_max_stack_addr(struct proc *p)
 #define PROC_TEXT_ADDR(p)      proc_text_addr((p))
 #define PROC_MIN_STACK_ADDR(p) proc_min_stack_addr((p))
 #define PROC_MAX_STACK_ADDR(p) proc_max_stack_addr((p))
+
+ * Macros translating historic proc fields to the new vmspace layout.
+ */
+#define PROC_TO_VM(p)                 ((p)->p_vmspace)
+#define PROC_DATA_SIZE(p)             ((p)->p_vmspace->vm_psegment.ps_dsize)
+#define PROC_STACK_SIZE(p)            ((p)->p_vmspace->vm_psegment.ps_ssize)
+#define PROC_TEXT_SIZE(p)             ((p)->p_vmspace->vm_psegment.ps_tsize)
+#define PROC_DATA_ADDR(p)             ((p)->p_vmspace->vm_psegment.ps_daddr)
+#define PROC_STACK_ADDR(p)            ((p)->p_vmspace->vm_psegment.ps_saddr)
+#define PROC_TEXT_ADDR(p)             ((p)->p_vmspace->vm_psegment.ps_taddr)
+#define PROC_MIN_STACK_ADDR(p)        ((p)->p_vmspace->vm_psegment.ps_minsaddr)
+#define PROC_MAX_STACK_ADDR(p)        ((p)->p_vmspace->vm_psegment.ps_maxsaddr)
+
 
 #endif /* _SYS_VM_COMPAT_H_ */

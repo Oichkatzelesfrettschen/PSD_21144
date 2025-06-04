@@ -28,6 +28,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+
 #include <sys/lock.h>
 #include <sys/param.h>
 #include <sys/proc.h>
@@ -44,6 +45,7 @@
 /*
  * kern_fork_compat - Fork adapter preserving legacy overlay behaviour.
  */
+
 /*
  * Serialize overlay manipulation during fork to prevent races while the
  * address space is temporarily unmapped.
@@ -90,4 +92,20 @@ int kern_fork_compat(struct proc *parent, struct proc *child, int isvfork) {
 	lwkt_reltoken(&kf_token);
 
 	return error;
+
+int kern_fork_compat(struct proc* parent, struct proc* child, int isvfork) {
+#ifdef OVERLAY
+	/* Detach overlays from parent during duplication */
+	ovlspace_mapout(parent->p_ovlspace);
+#endif
+
+	child->p_vmspace = vmspace_fork(parent->p_vmspace);
+
+#ifdef OVERLAY
+	/* Attach overlays to the new child */
+	ovlspace_mapin(child->p_ovlspace);
+#endif
+
+	return cpu_fork(parent, child);
+
 }
