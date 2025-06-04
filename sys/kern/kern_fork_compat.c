@@ -28,9 +28,12 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+
+#include <sys/lock.h>
 #include <sys/param.h>
 #include <sys/proc.h>
 #include <sys/systm.h>
+#include <sys/token.h>
 
 #include <vm/include/vm_extern.h>
 #include <vm/vm_compat.h>
@@ -42,6 +45,54 @@
 /*
  * kern_fork_compat - Fork adapter preserving legacy overlay behaviour.
  */
+
+/*
+ * Serialize overlay manipulation during fork to prevent races while the
+ * address space is temporarily unmapped.
+ */
+static struct lwkt_token kf_token;
+static int kf_token_inited;
+
+void kern_fork_compat_init(void) {
+	lwkt_token_init(&kf_token, "kern_fork_compat");
+	kf_token_inited = 1;
+}
+
+int kern_fork_compat(struct proc *parent, struct proc *child, int isvfork) {
+	int error;
+
+	/* Assume the token has been initialised by system startup. */
+	if (!kf_token_inited)
+		kern_fork_compat_init();
+
+	/* Ensure exclusive access. */
+	lwkt_gettoken(&kf_token);
+
+#ifdef OVERLAY
+	/* Detach overlays from parent during duplication. */
+	ovlspace_mapout(parent->p_ovlspace);
+#endif
+
+	/* Duplicate the parent's vmspace.  Return error if allocation fails. */
+	child->p_vmspace = vmspace_fork(parent->p_vmspace);
+	if (child->p_vmspace == NULL) {
+		lwkt_reltoken(&kf_token);
+		return ENOMEM;
+	}
+
+#ifdef OVERLAY
+	/* Attach overlays to the new child. */
+	ovlspace_mapin(child->p_ovlspace);
+#endif
+
+	/* Let the machine-dependent layer finish the fork. */
+	error = cpu_fork(parent, child);
+
+	/* Release lock after fork setup completes. */
+	lwkt_reltoken(&kf_token);
+
+	return error;
+
 int kern_fork_compat(struct proc* parent, struct proc* child, int isvfork) {
 #ifdef OVERLAY
 	/* Detach overlays from parent during duplication */
@@ -56,4 +107,5 @@ int kern_fork_compat(struct proc* parent, struct proc* child, int isvfork) {
 #endif
 
 	return cpu_fork(parent, child);
+
 }

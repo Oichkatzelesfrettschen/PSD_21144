@@ -40,6 +40,12 @@
 /*
  * 386 Segmentation Data Structures and definitions
  *	William F. Jolitz (william@ernie.berkeley.edu) 6/20/1989
+ *
+ * Pseudo Segmentation:
+ *   PSD_21144 retains the classic text, data and stack segments by
+ *   describing them in a vm_pseudo_segment structure.  The hardware runs
+ *   in a flat mode while selectors index these pseudo descriptors for
+ *   legacy code.
  */
 
 #ifndef _I386_SEGMENTS_H_

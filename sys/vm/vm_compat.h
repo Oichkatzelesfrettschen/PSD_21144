@@ -37,6 +37,79 @@
 #endif
 
 /*
+
+ * Accessor functions translating historic proc fields to the new vmspace
+ * layout. These helpers flatten the indirection chain and avoid unsafe
+ * macros.
+ */
+static inline struct vmspace *
+proc_to_vm(struct proc *p)
+{
+    return p->p_vmspace;
+}
+
+static inline segsz_t
+proc_data_size(struct proc *p)
+{
+    return p->p_vmspace->vm_psegment.ps_data->psx_dsize;
+}
+
+static inline segsz_t
+proc_stack_size(struct proc *p)
+{
+    return p->p_vmspace->vm_psegment.ps_stack->psx_ssize;
+}
+
+static inline segsz_t
+proc_text_size(struct proc *p)
+{
+    return p->p_vmspace->vm_psegment.ps_text->psx_tsize;
+}
+
+static inline caddr_t
+proc_data_addr(struct proc *p)
+{
+    return p->p_vmspace->vm_psegment.ps_data->psx_daddr;
+}
+
+static inline caddr_t
+proc_stack_addr(struct proc *p)
+{
+    return p->p_vmspace->vm_psegment.ps_stack->psx_saddr;
+}
+
+static inline caddr_t
+proc_text_addr(struct proc *p)
+{
+    return p->p_vmspace->vm_psegment.ps_text->psx_taddr;
+}
+
+static inline caddr_t
+proc_min_stack_addr(struct proc *p)
+{
+    return p->p_vmspace->vm_psegment.ps_minsaddr;
+}
+
+static inline caddr_t
+proc_max_stack_addr(struct proc *p)
+{
+    return p->p_vmspace->vm_psegment.ps_maxsaddr;
+}
+
+/*
+ * Compatibility macros retained for legacy code. These simply invoke the
+ * new accessor functions.
+ */
+#define PROC_TO_VM(p)          proc_to_vm((p))
+#define PROC_DATA_SIZE(p)      proc_data_size((p))
+#define PROC_STACK_SIZE(p)     proc_stack_size((p))
+#define PROC_TEXT_SIZE(p)      proc_text_size((p))
+#define PROC_DATA_ADDR(p)      proc_data_addr((p))
+#define PROC_STACK_ADDR(p)     proc_stack_addr((p))
+#define PROC_TEXT_ADDR(p)      proc_text_addr((p))
+#define PROC_MIN_STACK_ADDR(p) proc_min_stack_addr((p))
+#define PROC_MAX_STACK_ADDR(p) proc_max_stack_addr((p))
+
  * Macros translating historic proc fields to the new vmspace layout.
  */
 #define PROC_TO_VM(p)                 ((p)->p_vmspace)
@@ -48,5 +121,6 @@
 #define PROC_TEXT_ADDR(p)             ((p)->p_vmspace->vm_psegment.ps_taddr)
 #define PROC_MIN_STACK_ADDR(p)        ((p)->p_vmspace->vm_psegment.ps_minsaddr)
 #define PROC_MAX_STACK_ADDR(p)        ((p)->p_vmspace->vm_psegment.ps_maxsaddr)
+
 
 #endif /* _SYS_VM_COMPAT_H_ */
