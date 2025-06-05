@@ -38,6 +38,14 @@
 #ifndef _I386_STDARG_H_
 #define	_I386_STDARG_H_
 
+#if defined(MOCK_HAL_ENV_STANDALONE) || defined(TEST_HAL_PCID_ALLOCATOR) || defined(STANDALONE_INTEGRATION_TEST) || defined(VM_SEMANTIC_FSM_STANDALONE) || defined(VM_TEST_SEMANTIC_TRANSITIONS_STANDALONE) || defined(VM_COHERENCE_STANDALONE) || defined(VM_SEMANTIC_NOTIFY_STANDALONE) || defined(VM_SEMANTIC_VALIDATORS_STANDALONE)
+// In these standalone modes, this header should be a no-op.
+// The C files themselves should include the system <stdarg.h> if needed,
+// or it will be pulled in by other system headers like <stdio.h>.
+// This prevents this file from shadowing the system's stdarg.h.
+#else
+// For a kernel build, include the kernel's <sys/stdarg.h>
 #include <sys/stdarg.h>
+#endif
 
 #endif /* !_I386_STDARG_H_ */

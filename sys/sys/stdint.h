@@ -33,7 +33,13 @@
 #define _SYS_STDINT_H_
 
 #include <sys/cdefs.h>
-#include <machine/types.h>
+// <machine/types.h> is included by sys/types.h already if not STANDALONE_INTEGRATION_TEST.
+// If it's STANDALONE_INTEGRATION_TEST, sys/types.h includes system <stdint.h> which is what we want.
+
+#if !defined(STANDALONE_INTEGRATION_TEST)
+// These definitions will conflict with system <stdint.h> if used in standalone integration tests.
+// For kernel builds or specific module standalone tests that *don't* use system stdio/stdlib, these are fine.
+#include <machine/types.h> // Provides __intN_t etc. for these typedefs in kernel mode
 
 #ifndef	_BSD_INT8_T_
 typedef	__int8_t			int8_t;
@@ -75,24 +81,22 @@ typedef	__uint64_t			uint64_t;
 #define	_BSD_UINT64_T_
 #endif
 
-//#ifndef	_BSD_INTPTR_T_
+// intptr_t and uintptr_t are C99 types, should come from system <stdint.h> in standalone.
+// The _BSD_INTPTR_T_ guards are commented out in the original, suggesting they are expected from elsewhere.
+// For kernel, these might be based on __intptr_t from machine/types.h.
 typedef	__intptr_t			intptr_t;
-//#define	_BSD_INTPTR_T_
-//#endif
-
-//#ifndef	_BSD_UINTPTR_T_
 typedef	__uintptr_t			uintptr_t;
-//#define	_BSD_UINTPTR_T_
-//#endif
 
 #ifndef _BSD_REGISTER_T_
-typedef	__register_t 		register_t;
+typedef	__register_t 		register_t; // __register_t is machine specific
 #define _BSD_REGISTER_T_
 #endif
 
 #ifndef _BSD_UREGISTER_T_
-typedef	__uregister_t 		uregister_t;
+typedef	__uregister_t 		uregister_t; // __uregister_t is machine specific
 #define _BSD_UREGISTER_T_
 #endif
+
+#endif // !STANDALONE_INTEGRATION_TEST
 
 #endif /* !_SYS_STDINT_H_ */

@@ -196,6 +196,8 @@ struct	proc {
 
 	caddr_t  			p_psstrp;		/* :: address of process's ps_strings */
 	struct	mdproc 		p_md;			/* Any machine-dependent fields. */
+	uint64_t            p_arch_asid;    /* Architecture-specific ASID and generation */
+    uintptr_t           p_paddr_pgdir;  /* Physical address of page directory (for HAL use) */
 	int					p_pflag;		/* private flags (machine-dependent) */
 
     short				p_xstat;		/* exit status for wait */
