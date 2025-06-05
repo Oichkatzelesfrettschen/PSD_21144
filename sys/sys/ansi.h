@@ -40,8 +40,16 @@
 #define	_SYS_ANSI_H_
 
 #include <sys/cdefs.h>
-//#include <machine/ansi.h>
-#include <machine/types.h>
+
+#if !defined(STANDALONE_INTEGRATION_TEST)
+// When STANDALONE_INTEGRATION_TEST is defined, we want to avoid most/all definitions
+// from this file to prevent conflicts with system headers providing stdint.h/stddef.h types.
+// The specific __* types and _BSD_*_T_ macros are part of the BSD type system
+// that clashes with a standard Linux userspace build environment.
+
+//#include <machine/ansi.h> // This was commented out, but machine/types.h is included.
+                           // For STANDALONE_INTEGRATION_TEST, machine/types.h (our dummy) includes stdint.h.
+#include <machine/types.h> // For __uint32_t etc. if not standalone_integration
 
 typedef unsigned long			__fixpt_t;	/* fixed point number */
 typedef	unsigned short			__nlink_t;	/* link count */
@@ -127,5 +135,7 @@ typedef char *__va_list;
 #else
 typedef __builtin_va_list __va_list;
 #endif
+
+#endif // !STANDALONE_INTEGRATION_TEST
 
 #endif	/* !_SYS_ANSI_H_ */
