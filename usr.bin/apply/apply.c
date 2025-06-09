@@ -52,9 +52,26 @@ __RCSID("$NetBSD: apply.c,v 1.19 2016/03/12 22:28:04 dholland Exp $");
 #include <string.h>
 #include <unistd.h>
 
+/** Display usage information and exit. */
 static __dead void usage(void);
-static int shell_system(const char *);
 
+/** Execute a command using the user's shell.
+ *
+ * @param command Command string to run.
+ * @return The exit status of the command or -1 on error.
+ */
+static int shell_system(const char *command);
+
+/**
+ * Program entry point.
+ *
+ * Parses command-line options and invokes the specified command on
+ * successive argument groups.
+ *
+ * @param argc Argument count.
+ * @param argv Argument vector.
+ * @return 0 on success, non-zero on failure.
+ */
 int
 main(int argc, char *argv[])
 {
@@ -197,10 +214,14 @@ main(int argc, char *argv[])
 	return rval;
 }
 
-/*
- * shell_system --
- * 	Private version of system(3).  Use the user's SHELL environment
- *	variable as the shell to execute.
+/**
+ * Execute a command using the user's shell.
+ *
+ * Replacement for system(3) that respects the SHELL environment
+ * variable.
+ *
+ * @param command Command string to execute.
+ * @return The exit status of the command or -1 on failure.
  */
 static int
 shell_system(const char *command)
@@ -251,6 +272,7 @@ shell_system(const char *command)
 	/*NOTREACHED*/
 }
 
+/** Print usage information and terminate. */
 static __dead void
 usage(void)
 {
