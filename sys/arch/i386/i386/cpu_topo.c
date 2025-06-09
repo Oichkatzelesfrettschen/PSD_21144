@@ -26,38 +26,38 @@
 
 #include <sys/cdefs.h>
 
-#include <sys/param.h>
-#include <sys/systm.h>
+#include <sys/cputopo.h>
 #include <sys/malloc.h>
 #include <sys/memrange.h>
-#include <sys/cputopo.h>
+#include <sys/param.h>
 #include <sys/percpu.h>
+#include <sys/systm.h>
 
 #include <vm/include/vm_param.h>
 
+#include <machine/apic/lapicvar.h>
 #include <machine/bus.h>
-#include <machine/cpuinfo.h>
 #include <machine/cpufunc.h>
+#include <machine/cpuinfo.h>
 #include <machine/cputypes.h>
 #include <machine/cpuvar.h>
-#include <machine/apic/lapicvar.h>
 #include <machine/param.h>
 #include <machine/smp.h>
 #include <machine/specialreg.h>
 #include <machine/vmparam.h>
 
 /* lock region used by kernel profiling */
-int	mcount_lock;
+int mcount_lock;
 
-int	mp_naps;			/* # of Applications processors */
-int	boot_cpu_id = -1;	/* designated BSP */
+int mp_naps;		  /* # of Applications processors */
+int boot_cpu_id = -1; /* designated BSP */
 
 /* AP uses this during bootstrap.  Do not staticize.  */
-char *bootSTK;
-int bootAP;
+char* bootSTK;
+int	  bootAP;
 
 /* Free these after use */
-void *bootstacks[NCPUS];
+void* bootstacks[NCPUS];
 
 /* Default cpu_ops implementation. */
 struct cpu_ops cpu_ops;
@@ -71,8 +71,8 @@ volatile int aps_ready = 0;
  */
 int cpu_apic_ids[NCPUS];
 
-static int hyperthreading_allowed = 1;
-static int hyperthreading_intr_allowed = 0;
+static int				hyperthreading_allowed		= 1;
+static int				hyperthreading_intr_allowed = 0;
 static struct topo_node topo_root;
 
 static int pkg_id_shift;
@@ -81,42 +81,53 @@ static int core_id_shift;
 static int disabled_cpus;
 
 struct cache_info {
-	int	id_shift;
-	int	present;
+	int id_shift;
+	int present;
 } static caches[MAX_CACHE_LEVELS];
 
 unsigned int boot_address;
-u_int max_apic_id;
+u_int		 max_apic_id;
 
-void	intr_add_cpu(u_int);
+void intr_add_cpu(u_int);
 
-#define MiB(v)	(v ## ULL << 20)
+#define MiB(v) (v##ULL << 20)
 
-void
-mem_range_AP_init(void)
-{
+void mem_range_AP_init(void) {
 	if (mem_range_softc.mr_op && mem_range_softc.mr_op->initAP) {
 		mem_range_softc.mr_op->initAP(&mem_range_softc);
 	}
 }
 
-/*
- * Round up to the next power of two, if necessary, and then
- * take log2.
- * Returns -1 if argument is zero.
+/**
+ * \brief Compute the bit width for a mask value.
+ *
+ * Rounds @p x up to the next power of two if necessary, then returns
+ * the log2 of the result. A return value of -1 indicates that @p x was
+ * zero.
+ *
+ * @param x Value to convert to a mask width.
+ * @return Log2 of @p x, or -1 if @p x is zero.
  */
 static __inline int
-mask_width(u_int x)
-{
+mask_width(u_int x) {
 	return (fls(x << (1 - powerof2(x))) - 1);
 }
 
-/*
- * Add a cache level to the cache topology description.
+/**
+ * \brief Record a deterministic cache entry.
+ *
+ * Updates the global cache topology description with information about
+ * a given cache level. The function validates the provided parameters
+ * and normalizes them so that caches never describe a region larger than
+ * a package or smaller than a core.
+ *
+ * @param type        Cache type (0 for none, 1 for data, etc.).
+ * @param level       Cache hierarchy level starting at 1.
+ * @param share_count Number of logical CPUs sharing this cache.
+ * @return 0 if the cache should be ignored, otherwise 1.
  */
 static int
-add_deterministic_cache(int type, int level, int share_count)
-{
+add_deterministic_cache(int type, int level, int share_count) {
 	if (type == 0) {
 		return (0);
 	}
@@ -137,17 +148,19 @@ add_deterministic_cache(int type, int level, int share_count)
 		printf("%u => %u\n", caches[level - 1].id_shift, mask_width(share_count));
 	}
 	caches[level - 1].id_shift = mask_width(share_count);
-	caches[level - 1].present = 1;
+	caches[level - 1].present  = 1;
 
 	if (caches[level - 1].id_shift > pkg_id_shift) {
 		printf("WARNING: L%u data cache covers more "
-				"APIC IDs than a package (%u > %u)\n", level,
-				caches[level - 1].id_shift, pkg_id_shift);
+			   "APIC IDs than a package (%u > %u)\n",
+			   level,
+			   caches[level - 1].id_shift, pkg_id_shift);
 		caches[level - 1].id_shift = pkg_id_shift;
 	}
 	if (caches[level - 1].id_shift < core_id_shift) {
 		printf("WARNING: L%u data cache covers fewer "
-				"APIC IDs than a core (%u < %u)\n", level, caches[level - 1].id_shift, core_id_shift);
+			   "APIC IDs than a core (%u < %u)\n",
+			   level, caches[level - 1].id_shift, core_id_shift);
 		caches[level - 1].id_shift = core_id_shift;
 	}
 
@@ -164,16 +177,22 @@ add_deterministic_cache(int type, int level, int share_count)
  *  - BKDG For AMD Family 16h Models 00h-0Fh Processors (Publication # 48751)
  *  - PPR For AMD Family 17h Models 00h-0Fh Processors (Publication # 54945)
  */
+/**
+ * \brief Probe AMD processor topology.
+ *
+ * Uses CPUID leaves documented in AMD manuals to determine package,
+ * node and core relationships along with cache information. The
+ * collected data populates global structures used during AP startup.
+ */
 static void
-topo_probe_amd(void)
-{
-	u_int p[4];
+topo_probe_amd(void) {
+	u_int	 p[4];
 	uint64_t v;
-	int level;
-	int nodes_per_socket;
-	int share_count;
-	int type;
-	int i;
+	int		 level;
+	int		 nodes_per_socket;
+	int		 share_count;
+	int		 type;
+	int		 i;
 
 	/* No multi-core capability. */
 	if ((amd_feature2 & AMDID2_CMP) == 0) {
@@ -182,7 +201,7 @@ topo_probe_amd(void)
 
 	/* For families 10h and newer. */
 	pkg_id_shift = (cpu_procinfo2 & AMDID_COREID_SIZE) >>
-	    AMDID_COREID_SIZE_SHIFT;
+				   AMDID_COREID_SIZE_SHIFT;
 
 	/* For 0Fh family. */
 	if (pkg_id_shift == 0) {
@@ -199,9 +218,9 @@ topo_probe_amd(void)
 	 * so we are following AMD's nomenclature here.
 	 */
 	if ((amd_feature2 & AMDID2_TOPOLOGY) != 0 &&
-	    CPUID_TO_FAMILY(cpu_id) >= 0x16) {
+		CPUID_TO_FAMILY(cpu_id) >= 0x16) {
 		cpuid_count(0x8000001e, 0, p);
-		share_count = ((p[1] >> 8) & 0xff) + 1;
+		share_count	  = ((p[1] >> 8) & 0xff) + 1;
 		core_id_shift = mask_width(share_count);
 
 		/*
@@ -211,14 +230,14 @@ topo_probe_amd(void)
 		 * within them.
 		 */
 		nodes_per_socket = ((p[2] >> 8) & 0x7) + 1;
-		node_id_shift = pkg_id_shift - mask_width(nodes_per_socket);
+		node_id_shift	 = pkg_id_shift - mask_width(nodes_per_socket);
 	}
 
 	if ((amd_feature2 & AMDID2_TOPOLOGY) != 0) {
-		for (i = 0; ; i++) {
+		for (i = 0;; i++) {
 			cpuid_count(0x8000001d, i, p);
-			type = p[0] & 0x1f;
-			level = (p[0] >> 5) & 0x7;
+			type		= p[0] & 0x1f;
+			level		= (p[0] >> 5) & 0x7;
 			share_count = 1 + ((p[0] >> 14) & 0xfff);
 
 			if (!add_deterministic_cache(type, level, share_count)) {
@@ -230,14 +249,14 @@ topo_probe_amd(void)
 			cpuid_count(0x80000005, 0, p);
 			if (((p[2] >> 24) & 0xff) != 0) {
 				caches[0].id_shift = 0;
-				caches[0].present = 1;
+				caches[0].present  = 1;
 			}
 		}
 		if (cpu_exthigh >= 0x80000006) {
 			cpuid_count(0x80000006, 0, p);
 			if (((p[2] >> 16) & 0xffff) != 0) {
 				caches[1].id_shift = 0;
-				caches[1].present = 1;
+				caches[1].present  = 1;
 			}
 			if (((p[3] >> 18) & 0x3fff) != 0) {
 				nodes_per_socket = 1;
@@ -247,11 +266,11 @@ topo_probe_amd(void)
 					 * have multiple chips, each with its
 					 * own L3 cache, on the same die.
 					 */
-					v = rdmsr(0xc001100c);
+					v				 = rdmsr(0xc001100c);
 					nodes_per_socket = 1 + ((v >> 3) & 0x7);
 				}
 				caches[2].id_shift =
-				    pkg_id_shift - mask_width(nodes_per_socket);
+					pkg_id_shift - mask_width(nodes_per_socket);
 				caches[2].present = 1;
 			}
 		}
@@ -267,12 +286,18 @@ topo_probe_amd(void)
  *    Volume 3A: System Programming Guide, PROGRAMMING CONSIDERATIONS
  *    FOR HARDWARE MULTI-THREADING CAPABLE PROCESSORS
  */
+/**
+ * \brief Probe Intel topology using CPUID leaf 4.
+ *
+ * Determines the mapping of cores and logical processors by
+ * inspecting CPUID leaf 4 when available.  The detected values
+ * update the global \c core_id_shift and \c pkg_id_shift fields.
+ */
 static void
-topo_probe_intel_0x4(void)
-{
+topo_probe_intel_0x4(void) {
 	u_int p[4];
-	int max_cores;
-	int max_logical;
+	int	  max_cores;
+	int	  max_logical;
 
 	/* Both zero and one here mean one logical processor per package. */
 	max_logical = (cpu_feature & CPUID_HTT) != 0 ? (cpu_procinfo & CPUID_HTT_CORES) >> 16 : 1;
@@ -287,7 +312,7 @@ topo_probe_intel_0x4(void)
 		max_cores = 1;
 	}
 
-	core_id_shift = mask_width(max_logical/max_cores);
+	core_id_shift = mask_width(max_logical / max_cores);
 	KASSERT(core_id_shift >= 0 /*("intel topo: max_cores > max_logical\n")*/);
 	pkg_id_shift = core_id_shift + mask_width(max_cores);
 }
@@ -301,13 +326,19 @@ topo_probe_intel_0x4(void)
  *    Volume 3A: System Programming Guide, PROGRAMMING CONSIDERATIONS
  *    FOR HARDWARE MULTI-THREADING CAPABLE PROCESSORS
  */
+/**
+ * \brief Probe Intel topology using CPUID leaf 11.
+ *
+ * Modern Intel processors expose hierarchical topology
+ * information via CPUID leaf 11.  This function decodes the
+ * reported levels to derive \c core_id_shift and \c pkg_id_shift.
+ */
 static void
-topo_probe_intel_0xb(void)
-{
+topo_probe_intel_0xb(void) {
 	u_int p[4];
-	int bits;
-	int type;
-	int i;
+	int	  bits;
+	int	  type;
+	int	  i;
 
 	/* Fall back if CPU leaf 11 doesn't really exist. */
 	cpuid_count(0x0b, 0, p);
@@ -350,14 +381,20 @@ topo_probe_intel_0xb(void)
  *    Volume 2A: Instruction Set Reference, A-M,
  *    CPUID instruction
  */
+/**
+ * \brief Discover Intel cache hierarchy.
+ *
+ * Enumerates CPUID leaf 4 to determine the organization of
+ * caches shared between logical CPUs.  Results populate the
+ * global \c caches array used by the topology layer.
+ */
 static void
-topo_probe_intel_caches(void)
-{
+topo_probe_intel_caches(void) {
 	u_int p[4];
-	int level;
-	int share_count;
-	int type;
-	int i;
+	int	  level;
+	int	  share_count;
+	int	  type;
+	int	  i;
 
 	if (cpu_high < 0x4) {
 		/*
@@ -367,16 +404,16 @@ topo_probe_intel_caches(void)
 		 * shared only by HTT processing units, if HTT is present.
 		 */
 		caches[0].id_shift = pkg_id_shift;
-		caches[0].present = 1;
+		caches[0].present  = 1;
 		caches[1].id_shift = pkg_id_shift;
-		caches[1].present = 1;
+		caches[1].present  = 1;
 		return;
 	}
 
 	for (i = 0;; i++) {
 		cpuid_count(0x4, i, p);
-		type = p[0] & 0x1f;
-		level = (p[0] >> 5) & 0x7;
+		type		= p[0] & 0x1f;
+		level		= (p[0] >> 5) & 0x7;
 		share_count = 1 + ((p[0] >> 14) & 0xfff);
 
 		if (!add_deterministic_cache(type, level, share_count)) {
@@ -390,10 +427,14 @@ topo_probe_intel_caches(void)
  * See:
  *  - Intel 64 Architecture Processor Topology Enumeration
  */
+/**
+ * \brief High-level Intel topology probe.
+ *
+ * Invokes leaf-11 or leaf-4 probing routines depending on CPU
+ * capabilities and then enumerates cache information.
+ */
 static void
-topo_probe_intel(void)
-{
-
+topo_probe_intel(void) {
 	/*
 	 * Note that 0x1 <= cpu_high < 4 case should be
 	 * compatible with topo_probe_intel_0x4() logic when
@@ -417,9 +458,14 @@ topo_probe_intel(void)
  * homogenious.
  * That doesn't necesserily imply that the topology is uniform.
  */
-void
-topo_probe(void)
-{
+/**
+ * \brief Public entry point for CPU topology probing.
+ *
+ * Determines the layout of packages, nodes, cores and caches on
+ * the boot processor and constructs the topology tree. Subsequent
+ * calls are ignored once probing is complete.
+ */
+void topo_probe(void) {
 	static int cpu_topo_probed = 0;
 	struct i386_topo_layer {
 		int type;
@@ -427,20 +473,19 @@ topo_probe(void)
 		int id_shift;
 	} topo_layers[MAX_CACHE_LEVELS + 4];
 
-	struct topo_node *parent;
-	struct topo_node *node;
-	int layer;
-	int nlayers;
-	int node_id;
-	int i;
+	struct topo_node* parent;
+	struct topo_node* node;
+	int				  layer;
+	int				  nlayers;
+	int				  node_id;
+	int				  i;
 
 	if (cpu_topo_probed) {
 		return;
 	}
 	if (mp_ncpus <= 1) {
 		; /* nothing */
-	} else if (cpu_vendor_id == CPUVENDOR_AMD
-			|| cpu_vendor_id == CPUVENDOR_HYGON) {
+	} else if (cpu_vendor_id == CPUVENDOR_AMD || cpu_vendor_id == CPUVENDOR_HYGON) {
 		topo_probe_amd();
 	} else if (cpu_vendor_id == CPUVENDOR_INTEL) {
 		topo_probe_intel();
@@ -451,14 +496,14 @@ topo_probe(void)
 	nlayers = 0;
 	bzero(topo_layers, sizeof(topo_layers));
 
-	topo_layers[nlayers].type = TOPO_TYPE_PKG;
+	topo_layers[nlayers].type	  = TOPO_TYPE_PKG;
 	topo_layers[nlayers].id_shift = pkg_id_shift;
 	if (bootverbose)
 		printf("Package ID shift: %u\n", topo_layers[nlayers].id_shift);
 	nlayers++;
 
 	if (pkg_id_shift > node_id_shift && node_id_shift != 0) {
-		topo_layers[nlayers].type = TOPO_TYPE_GROUP;
+		topo_layers[nlayers].type	  = TOPO_TYPE_GROUP;
 		topo_layers[nlayers].id_shift = node_id_shift;
 		if (bootverbose)
 			printf("Node ID shift: %u\n", topo_layers[nlayers].id_shift);
@@ -478,8 +523,8 @@ topo_probe(void)
 			KASSERT(caches[i].id_shift <= pkg_id_shift /*("bug in APIC topology discovery")*/);
 			KASSERT(caches[i].id_shift >= core_id_shift /*("bug in APIC topology discovery")*/);
 
-			topo_layers[nlayers].type = TOPO_TYPE_CACHE;
-			topo_layers[nlayers].subtype = i + 1;
+			topo_layers[nlayers].type	  = TOPO_TYPE_CACHE;
+			topo_layers[nlayers].subtype  = i + 1;
 			topo_layers[nlayers].id_shift = caches[i].id_shift;
 			if (bootverbose) {
 				printf("L%u cache ID shift: %u\n", topo_layers[nlayers].subtype, topo_layers[nlayers].id_shift);
@@ -489,7 +534,7 @@ topo_probe(void)
 	}
 
 	if (pkg_id_shift > core_id_shift) {
-		topo_layers[nlayers].type = TOPO_TYPE_CORE;
+		topo_layers[nlayers].type	  = TOPO_TYPE_CORE;
 		topo_layers[nlayers].id_shift = core_id_shift;
 		if (bootverbose) {
 			printf("Core ID shift: %u\n", topo_layers[nlayers].id_shift);
@@ -497,7 +542,7 @@ topo_probe(void)
 		nlayers++;
 	}
 
-	topo_layers[nlayers].type = TOPO_TYPE_PU;
+	topo_layers[nlayers].type	  = TOPO_TYPE_PU;
 	topo_layers[nlayers].id_shift = 0;
 	nlayers++;
 
@@ -510,14 +555,14 @@ topo_probe(void)
 		parent = &topo_root;
 		for (layer = 0; layer < nlayers; ++layer) {
 			node_id = i >> topo_layers[layer].id_shift;
-			parent = topo_add_node_by_hwid(parent, node_id, topo_layers[layer].type, topo_layers[layer].subtype);
+			parent	= topo_add_node_by_hwid(parent, node_id, topo_layers[layer].type, topo_layers[layer].subtype);
 		}
 	}
 
 	parent = &topo_root;
 	for (layer = 0; layer < nlayers; ++layer) {
 		node_id = boot_cpu_id >> topo_layers[layer].id_shift;
-		node = topo_find_node_by_hwid(parent, node_id, topo_layers[layer].type, topo_layers[layer].subtype);
+		node	= topo_find_node_by_hwid(parent, node_id, topo_layers[layer].type, topo_layers[layer].subtype);
 		topo_promote_child(node);
 		parent = node;
 	}
@@ -525,15 +570,17 @@ topo_probe(void)
 	cpu_topo_probed = 1;
 }
 
-/*
- * Assign logical CPU IDs to local APICs.
+/**
+ * \brief Assign logical CPU IDs to APIC identifiers.
+ *
+ * Walks the topology tree and maps each processing unit to a
+ * sequential CPU ID. CPUs beyond \c NCPUS are disabled. The BSP
+ * retains ID zero.
  */
-void
-assign_cpu_ids(void)
-{
-	struct topo_node *node;
-	u_int smt_mask;
-	int nhyper;
+void assign_cpu_ids(void) {
+	struct topo_node* node;
+	u_int			  smt_mask;
+	int				  nhyper;
 
 	smt_mask = (1u << core_id_shift) - 1;
 
@@ -542,7 +589,7 @@ assign_cpu_ids(void)
 	 * beyond MAXCPU.  CPU 0 is always assigned to the BSP.
 	 */
 	mp_ncpus = 0;
-	nhyper = 0;
+	nhyper	 = 0;
 	TOPO_FOREACH(node, &topo_root) {
 		if (node->type != TOPO_TYPE_PU)
 			continue;
@@ -574,7 +621,7 @@ assign_cpu_ids(void)
 			nhyper++;
 		}
 
-		cpu_apic_ids[mp_ncpus] = node->hwid;
+		cpu_apic_ids[mp_ncpus]	= node->hwid;
 		apic_cpuids[node->hwid] = mp_ncpus;
 		topo_set_pu_id(node, mp_ncpus);
 		mp_ncpus++;
@@ -582,18 +629,19 @@ assign_cpu_ids(void)
 
 	KASSERT(mp_maxid >= mp_ncpus - 1 /*("%s: counters out of sync: max %d, count %d", __func__, mp_maxid, mp_ncpus)*/);
 
-	mp_ncores = mp_ncpus - nhyper;
+	mp_ncores			 = mp_ncpus - nhyper;
 	smp_threads_per_core = mp_ncpus / mp_ncores;
 }
 
-/*
- * Print various information about the SMP system hardware and setup.
+/**
+ * \brief Print SMP topology information.
+ *
+ * Outputs a summary of detected packages, cores and threads as well
+ * as detailed per-CPU information when \c bootverbose is enabled.
  */
-void
-cpu_mp_announce(void)
-{
-	struct topo_node *node;
-	const char *hyperthread;
+void cpu_mp_announce(void) {
+	struct topo_node*	 node;
+	const char*			 hyperthread;
 	struct topo_analysis topology;
 
 	printf("211BSD/SMP: ");
@@ -603,12 +651,12 @@ cpu_mp_announce(void)
 			printf(" x %d groups", topology.entities[TOPO_LEVEL_GROUP]);
 		if (topology.entities[TOPO_LEVEL_CACHEGROUP] > 1)
 			printf(" x %d cache groups",
-					topology.entities[TOPO_LEVEL_CACHEGROUP]);
+				   topology.entities[TOPO_LEVEL_CACHEGROUP]);
 		if (topology.entities[TOPO_LEVEL_CORE] > 0)
 			printf(" x %d core(s)", topology.entities[TOPO_LEVEL_CORE]);
 		if (topology.entities[TOPO_LEVEL_THREAD] > 1)
 			printf(" x %d hardware threads",
-					topology.entities[TOPO_LEVEL_THREAD]);
+				   topology.entities[TOPO_LEVEL_THREAD]);
 	} else {
 		printf("Non-uniform topology");
 	}
@@ -622,12 +670,12 @@ cpu_mp_announce(void)
 				printf(" x %d groups", topology.entities[TOPO_LEVEL_GROUP]);
 			if (topology.entities[TOPO_LEVEL_CACHEGROUP] > 1)
 				printf(" x %d cache groups",
-						topology.entities[TOPO_LEVEL_CACHEGROUP]);
+					   topology.entities[TOPO_LEVEL_CACHEGROUP]);
 			if (topology.entities[TOPO_LEVEL_CORE] > 0)
 				printf(" x %d core(s)", topology.entities[TOPO_LEVEL_CORE]);
 			if (topology.entities[TOPO_LEVEL_THREAD] > 1)
 				printf(" x %d hardware threads",
-						topology.entities[TOPO_LEVEL_THREAD]);
+					   topology.entities[TOPO_LEVEL_THREAD]);
 		} else {
 			printf("Non-uniform topology");
 		}
@@ -653,12 +701,13 @@ cpu_mp_announce(void)
 
 			if (node->subtype == 0)
 				printf("\t\tCPU (AP%s): APIC ID: %u"
-						"(disabled)\n", hyperthread, node->hwid);
+					   "(disabled)\n",
+					   hyperthread, node->hwid);
 			else if (node->id == 0)
 				printf("\t\tCPU0 (BSP): APIC ID: %u\n", node->hwid);
 			else
 				printf("\t\tCPU%u (AP%s): APIC ID: %u\n", node->id, hyperthread,
-						node->hwid);
+					   node->hwid);
 			break;
 		default:
 			/* ignored */
@@ -667,12 +716,13 @@ cpu_mp_announce(void)
 	}
 }
 
-/*
- * Add a logical CPU to the topology.
+/**
+ * \brief Register a logical CPU.
+ *
+ * Adds a processing unit to the topology and marks it as the BSP
+ * when \p boot_cpu is non-zero.
  */
-void
-cpu_add(u_int apic_id, char boot_cpu)
-{
+void cpu_add(u_int apic_id, char boot_cpu) {
 	if (apic_id > max_apic_id) {
 		panic("SMP: APIC ID %d too high", apic_id);
 		return;
@@ -681,7 +731,7 @@ cpu_add(u_int apic_id, char boot_cpu)
 	cpu_info[apic_id].cpu_present = 1;
 	if (boot_cpu) {
 		KASSERT(boot_cpu_id == -1 /*("CPU %u claims to be BSP, but CPU %u already is", apic_id, boot_cpu_id)*/);
-		boot_cpu_id = apic_id;
+		boot_cpu_id				  = apic_id;
 		cpu_info[apic_id].cpu_bsp = 1;
 	}
 	mp_ncpus++;
@@ -690,9 +740,13 @@ cpu_add(u_int apic_id, char boot_cpu)
 	}
 }
 
-void
-cpu_mp_setmaxid(void)
-{
+/**
+ * \brief Finalize the maximum CPU ID.
+ *
+ * Assumes that \c cpu_add() has registered all CPUs and sets
+ * \c mp_maxid accordingly.
+ */
+void cpu_mp_setmaxid(void) {
 	/*
 	 * mp_ncpus and mp_maxid should be already set by calls to cpu_add().
 	 * If there were no calls to cpu_add() assume this is a UP system.
@@ -700,9 +754,7 @@ cpu_mp_setmaxid(void)
 	mp_maxid = NCPUS - 1;
 }
 
-int
-cpu_mp_probe(void)
-{
+int cpu_mp_probe(void) {
 	/*
 	 * Always record BSP in CPU map so that the mbuf init code works
 	 * correctly.
@@ -733,17 +785,16 @@ cpu_mp_probe(void)
 
 /* Allocate memory for the AP trampoline. */
 void
-alloc_ap_trampoline(basemem, seg_start, seg_end)
-	int *basemem;
-	u_int64_t seg_start, seg_end;
+		  alloc_ap_trampoline(basemem, seg_start, seg_end) int* basemem;
+u_int64_t seg_start, seg_end;
 {
-	int error;
+	int	 error;
 	bool allocated;
 
 	allocated = TRUE;
-	if((seg_end >= MiB(1)) || (trunc_page(seg_end) - round_page(seg_start) < round_page(bootMP_size))) {
+	if ((seg_end >= MiB(1)) || (trunc_page(seg_end) - round_page(seg_start) < round_page(bootMP_size))) {
 		allocated = TRUE;
-		if(seg_end < MiB(1)) {
+		if (seg_end < MiB(1)) {
 			boot_address = trunc_page(seg_end);
 			if ((seg_end - boot_address) < bootMP_size) {
 				boot_address -= round_page(bootMP_size);
@@ -751,17 +802,17 @@ alloc_ap_trampoline(basemem, seg_start, seg_end)
 			seg_end = boot_address;
 		} else {
 			boot_address = round_page(seg_start);
-			seg_start = boot_address + round_page(bootMP_size);
+			seg_start	 = boot_address + round_page(bootMP_size);
 		}
 	}
 
 	error = add_mem_cluster(seg_start, seg_end);
-	if(error) {
+	if (error) {
 		allocated = FALSE;
 	}
 
 	if (!allocated) {
-		boot_address = (int)basemem * 1024 - bootMP_size;
+		boot_address = (int) basemem * 1024 - bootMP_size;
 		if (bootverbose) {
 			printf("Cannot find enough space for the boot trampoline, placing it at %#x", boot_address);
 		}
@@ -772,8 +823,7 @@ alloc_ap_trampoline(basemem, seg_start, seg_end)
  * AP CPU's call this to initialize themselves.
  */
 void
-init_secondary_tail(pc)
-	struct percpu *pc;
+	init_secondary_tail(pc) struct percpu* pc;
 {
 	u_int cpuid;
 
@@ -852,9 +902,7 @@ init_secondary_tail(pc)
  * We also do not tell it about the BSP since it tells itself about
  * the BSP internally to work with UP kernels and on UP machines.
  */
-void
-set_interrupt_apic_ids(void)
-{
+void set_interrupt_apic_ids(void) {
 	u_int i, apic_id;
 
 	for (i = 0; i < NCPUS; i++) {
@@ -880,9 +928,7 @@ set_interrupt_apic_ids(void)
  * Add a CPU to our mask of valid CPUs that can be destinations of
  * interrupts.
  */
-void
-intr_add_cpu(u_int cpu)
-{
+void intr_add_cpu(u_int cpu) {
 	if (cpu >= NCPUS) {
 		panic("%s: Invalid CPU ID", __func__);
 	}

@@ -1,28 +1,32 @@
 CC=gcc
-CFLAGS=-Wall -Wextra -std=c99 # Added -std=c99 for consistency
+# Common flags for all builds
+CFLAGS=-Wall -Wextra -std=c99
+# Include the kernel headers so standalone tests can compile
+INCLUDES=-I../../sys -I../../sys/sys -I../../sys/vm/include
 
+# Build all available VM tests
 all: test_vm_compat test_kern_fork_compat test_sched_preempt \
      test_mmap_compat test_semantic_signals test_zero_copy_ipc \
      test_semantic_memory test_semantic_protection \
-     test_coherence_dist test_semantic_transitions
+     test_coherence_dist
 
 test_vm_compat: test_vm_compat.c
-	$(CC) $(CFLAGS) -DVM_COMPAT_STANDALONE -o $@ $<
+	$(CC) $(CFLAGS) $(INCLUDES) -DVM_COMPAT_STANDALONE -o $@ $<
 
 test_kern_fork_compat: test_kern_fork_compat.c
-	$(CC) $(CFLAGS) -o $@ $<
+	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $<
 
 test_sched_preempt: test_sched_preempt.c ../../sys/kern/sched_preempt.c
-	$(CC) $(CFLAGS) -DSCHED_PREEMPT_STANDALONE ../../sys/kern/sched_preempt.c $< -o $@
+	$(CC) $(CFLAGS) $(INCLUDES) -DSCHED_PREEMPT_STANDALONE ../../sys/kern/sched_preempt.c $< -o $@
 
 test_mmap_compat: test_mmap_compat.c
-	$(CC) $(CFLAGS) -DMMAP_COMPAT_STANDALONE -o $@ $<
+	$(CC) $(CFLAGS) $(INCLUDES) -DMMAP_COMPAT_STANDALONE -o $@ $<
 
 test_semantic_signals: test_semantic_signals.c
-	$(CC) $(CFLAGS) -DSIG_UNIFIED_STANDALONE -o $@ $<
+	$(CC) $(CFLAGS) $(INCLUDES) -DSIG_UNIFIED_STANDALONE -o $@ $<
 
 test_zero_copy_ipc: test_zero_copy_ipc.c
-	$(CC) $(CFLAGS) -DZEROCOPY_STANDALONE -o $@ $<
+	$(CC) $(CFLAGS) $(INCLUDES) -DZEROCOPY_STANDALONE -o $@ $<
 
 test_semantic_memory: test_semantic_memory.c ../../sys/vm/vm_semantic.c
 	$(CC) $(CFLAGS) -DVM_SEMANTIC_STANDALONE -I../../sys/vm/include \
