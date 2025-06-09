@@ -56,8 +56,8 @@ struct SimpleTransitionRule {
 // For MESSAGE_MAGIC
 #define MESSAGE_MAGIC_LOCAL 0xABADCAFE
 struct message_header_local {
-	uint32_t mh_magic;
-	uint32_t mh_size;
+	uint32_t mh_magic; /**< Message magic value for validation. */
+	uint32_t mh_size;  /**< Size of the message payload in bytes. */
 };
 
 static int validate_simple_data_to_message(struct SimpleContext* ctx) {
@@ -82,23 +82,27 @@ static int validate_simple_data_to_message(struct SimpleContext* ctx) {
 	}
 	return 0; // Success
 }
+/** Perform the ACTION for a DATA to MESSAGE transition. */
 static void action_simple_data_to_message(struct SimpleContext* ctx) {
 	printf("  Action: DATA -> MESSAGE (Simple). Setting attributes.\n");
 	ctx->descriptor->attributes |= ATTR_IN_TRANSIT;
 	ctx->descriptor->attributes &= ~ATTR_BUFFER_VALID;
 }
 
+/** Validate a MESSAGE to DATA transition. */
 static int validate_simple_message_to_data(struct SimpleContext* ctx) {
 	(void) ctx; // Suppress unused parameter warning
 	printf("  Validator: MESSAGE -> DATA (Simple).\n");
 	return 0;
 }
+/** Perform the ACTION for a MESSAGE to DATA transition. */
 static void action_simple_message_to_data(struct SimpleContext* ctx) {
 	printf("  Action: MESSAGE -> DATA (Simple). Setting attributes.\n");
 	ctx->descriptor->attributes &= ~(ATTR_IN_TRANSIT | ATTR_DELIVERED);
 	ctx->descriptor->attributes |= ATTR_BUFFER_VALID;
 }
 
+/** Validate a HEAP to TEXT transition. */
 static int validate_simple_heap_to_text(struct SimpleContext* ctx) {
 	printf("  Validator: HEAP -> TEXT (Simple). Attrs: 0x%x\n", ctx->descriptor->attributes);
 	if (!(ctx->descriptor->attributes & ATTR_COMPILED)) {
@@ -107,17 +111,20 @@ static int validate_simple_heap_to_text(struct SimpleContext* ctx) {
 	}
 	return 0;
 }
+/** Perform the ACTION for a HEAP to TEXT transition. */
 static void action_simple_heap_to_text(struct SimpleContext* ctx) {
 	printf("  Action: HEAP -> TEXT (Simple). Setting attributes.\n");
 	ctx->descriptor->attributes &= ~ATTR_WRITABLE;
 	ctx->descriptor->attributes |= ATTR_EXECUTABLE;
 }
+/** Validate a MATRIX to MESSAGE transition. */
 
 static int validate_simple_matrix_to_message(struct SimpleContext* ctx) {
 	(void) ctx; // Suppress unused parameter warning
 	printf("  Validator: MATRIX -> MESSAGE (Simple).\n");
 	return 0;
 }
+/** Perform the ACTION for a MATRIX to MESSAGE transition. */
 static void action_simple_matrix_to_message(struct SimpleContext* ctx) {
 	printf("  Action: MATRIX -> MESSAGE (Simple). Setting attributes.\n");
 	ctx->descriptor->attributes |= ATTR_IN_TRANSIT;
@@ -199,6 +206,7 @@ int check_fsm_transition(struct SimpleSemanticDescriptor* current_desc,
 }
 
 // --- Test Cases ---
+/** Test that JIT transitions from HEAP to TEXT succeed. */
 void test_jit_scenario() {
 	printf("--- Test JIT Scenario (HEAP -> TEXT) ---\n");
 	struct SimpleSemanticDescriptor desc   = { DOMAIN_HEAP, ATTR_WRITABLE | ATTR_COMPILED };
@@ -211,6 +219,7 @@ void test_jit_scenario() {
 	printf("JIT Scenario PASSED\n\n");
 }
 
+/** Test sending a message from DATA to MESSAGE domain. */
 void test_ipc_send_scenario() {
 	printf("--- Test IPC Send Scenario (DATA -> MESSAGE) ---\n");
 	char						 buffer[sizeof(struct message_header_local) + 10];
@@ -226,6 +235,7 @@ void test_ipc_send_scenario() {
 	printf("IPC Send Scenario PASSED\n\n");
 }
 
+/** Test receiving a message from MESSAGE back to DATA. */
 void test_ipc_receive_scenario() {
 	printf("--- Test IPC Receive Scenario (MESSAGE -> DATA) ---\n");
 	// If a message is delivered, it should no longer be marked as IN_TRANSIT.
@@ -240,6 +250,7 @@ void test_ipc_receive_scenario() {
 	printf("IPC Receive Scenario PASSED\n\n");
 }
 
+/** Test matrix domain transitions to MESSAGE. */
 void test_matrix_to_message_scenario() {
 	printf("--- Test Matrix to Message Scenario (MATRIX -> MESSAGE) ---\n");
 	struct SimpleSemanticDescriptor desc   = { DOMAIN_MATRIX, 0 };
@@ -250,6 +261,7 @@ void test_matrix_to_message_scenario() {
 	printf("Matrix to Message Scenario PASSED\n\n");
 }
 
+/** Test behavior when no transition rule exists. */
 void test_fail_no_rule() {
 	printf("--- Test Fail No Rule (TEXT -> HEAP) ---\n");
 	struct SimpleSemanticDescriptor desc   = { DOMAIN_TEXT, ATTR_EXECUTABLE };
@@ -259,6 +271,7 @@ void test_fail_no_rule() {
 	printf("Fail No Rule PASSED\n\n");
 }
 
+/** Test failure when forbidden attributes are present. */
 void test_fail_forbidden_attr() {
 	printf("--- Test Fail Forbidden Attr (DATA -> MESSAGE with EXECUTING) ---\n");
 	struct SimpleSemanticDescriptor desc   = { DOMAIN_DATA, ATTR_WRITABLE | ATTR_EXECUTING };
@@ -268,6 +281,7 @@ void test_fail_forbidden_attr() {
 	printf("Fail Forbidden Attr PASSED\n\n");
 }
 
+/** Test failure when required attributes are missing. */
 void test_fail_required_attr() {
 	printf("--- Test Fail Required Attr (HEAP -> TEXT without COMPILED) ---\n");
 	struct SimpleSemanticDescriptor desc   = { DOMAIN_HEAP, ATTR_WRITABLE };
@@ -277,6 +291,7 @@ void test_fail_required_attr() {
 	printf("Fail Required Attr PASSED\n\n");
 }
 
+/** Test validation failure when message data is invalid. */
 void test_fail_validator() {
 	printf("--- Test Fail Validator (DATA -> MESSAGE with bad magic) ---\n");
 	char						 buffer[sizeof(struct message_header_local) + 10];

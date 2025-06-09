@@ -4,6 +4,7 @@ GENERATE_LATEX    = NO
 GENERATE_XML      = YES
 INPUT             = ..
 RECURSIVE         = YES
+EXCLUDE           = contrib
 WARN_IF_UNDOCUMENTED = YES
 HAVE_DOT          = NO
 QUIET             = YES
