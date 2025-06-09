@@ -43,6 +43,13 @@ if command -v apt-get >/dev/null 2>&1; then
         libncurses-dev
         libssl-dev
         nasm
+        doxygen
+        python3-sphinx
+        cloc
+        qemu-system-x86
+        qemu-utils
+        qemu-nox
+        tmux
     )
 
     # Install missing packages
